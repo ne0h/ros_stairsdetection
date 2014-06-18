@@ -1,5 +1,5 @@
 #include <iostream>
-#include "../include/hmmwv/gpio.hpp"
+#include "gpio.hpp"
 
 using namespace std;
 

@@ -1,4 +1,4 @@
-#include "../include/hmmwv/gpio.hpp"
+#include "gpio.hpp"
 #include <cassert>
 #include <glob.h>
 #include <sstream>
