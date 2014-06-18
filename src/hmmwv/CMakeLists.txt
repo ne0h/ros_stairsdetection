@@ -127,6 +127,11 @@ add_executable(enginecontrol
 )
 target_link_libraries(enginecontrol ${catkin_LIBRARIES})
 
+add_executable(lms100rotating
+	src/lms100rotating.cpp
+)
+target_link_libraries(lms100rotating ${catkin_LIBRARIES})
+
 #############
 ## Install ##
 #############
