@@ -13,15 +13,23 @@
 class GPIO
 {
 public:
+	/**
+	 * PWM pins.
+	 * Assigned int values are path indices in the _pwmPinPaths list.
+	 */
 	enum PwmPin {
-		P8_13 = 0, // int values are path indices in _pwmPinPaths
+		P8_13 = 0,
 		P8_19 = 1,
 		P9_14 = 2,
 		P9_16 = 3
 	};
 
+	/**
+	 * Plain GPIOs.
+	 * Assigned int values are pin indices in sysfs.
+	 */
 	enum Pin {
-		P8_10 = 68, // int values are pin indices in sysfs
+		P8_10 = 68,
 		P8_12 = 44,
 		P8_15 = 47,
 		P8_17 = 27,
@@ -38,7 +46,20 @@ public:
 	GPIO();
 	~GPIO();
 	
+	/**
+	 * @brief Sets a GPIO pin to the specified value.
+	 * 
+	 * @param pin The GPIO to set.
+	 * @param value Desired pin value.
+	 */
 	void setPin(const Pin pin, const bool value);
+
+	/**
+	 * @brief Sets a PWM pin's duty cycle.
+	 * 
+	 * @param pin The PWM pin to set.
+	 * @param duty Duty cycle percentage, 0 < duty < 1.
+	 */
 	void setPwm(const PwmPin pin, const float duty);
 	
 private:
