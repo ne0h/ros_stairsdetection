@@ -29,6 +29,7 @@ public:
 	 * Assigned int values are pin indices in sysfs.
 	 */
 	enum Pin {
+		P8_8  = 67,
 		P8_10 = 68,
 		P8_12 = 44,
 		P8_15 = 47,

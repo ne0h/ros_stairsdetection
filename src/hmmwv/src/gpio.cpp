@@ -40,7 +40,22 @@ GPIO::GPIO() :
 	_pwmPinPaths.push_back(path);
 
 	// Set PWM period for both outputs
-	// TODO?
+	int result = echo(append(_pwmPinPaths[P8_13], "period"), PWM_PERIOD);
+	if(result != 0) {
+		cout << "At least one echo failed\n";
+	}
+	result = echo(append(_pwmPinPaths[P8_19], "period"), PWM_PERIOD);
+	if(result != 0) {
+		cout << "At least one echo failed\n";
+	}
+	result = echo(append(_pwmPinPaths[P9_14], "period"), PWM_PERIOD);
+	if(result != 0) {
+		cout << "At least one echo failed\n";
+	}
+	result = echo(append(_pwmPinPaths[P9_16], "period"), PWM_PERIOD);
+	if(result != 0) {
+		cout << "At least one echo failed\n";
+	}
 }
 
 GPIO::~GPIO()
