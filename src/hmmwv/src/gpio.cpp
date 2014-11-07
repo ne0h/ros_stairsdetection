@@ -20,26 +20,22 @@ GPIO::GPIO() :
 	// Enable the pwm pins
 	echo("/sys/devices/bone_capemgr.9/slots", "am33xx_pwm");
 	
-	// Prepare P8_13
-	echo("/sys/devices/bone_capemgr.9/slots", "bone_pwm_P8_13");
-	cout << "Finding PWM pin paths:\n";
-	string path = matchPath("/sys/devices/ocp.*/pwm_test_P8_13.*/");
-	cout << path << endl;
-	
-
-	echo("/sys/devices/bone_capemgr.9/slots", "bone_pwm_P8_19");
-	echo("/sys/devices/bone_capemgr.9/slots", "bone_pwm_P9_14");
-	echo("/sys/devices/bone_capemgr.9/slots", "bone_pwm_P9_16");
-
 	// Do not change the order of pins here. The PIN enum is used to access
 	// these paths, so their order is important.
+	cout << "Finding PWM pin paths:\n";
+	echo("/sys/devices/bone_capemgr.9/slots", "bone_pwm_P8_13");
+	string path = matchPath("/sys/devices/ocp.*/pwm_test_P8_13.*/");
+	cout << path << endl;
 	_pwmPinPaths.push_back(path);
+	echo("/sys/devices/bone_capemgr.9/slots", "bone_pwm_P8_19");
 	path = matchPath("/sys/devices/ocp.*/pwm_test_P8_19.*/");
 	cout << path << endl;
 	_pwmPinPaths.push_back(path);
+	echo("/sys/devices/bone_capemgr.9/slots", "bone_pwm_P9_14");
 	path = matchPath("/sys/devices/ocp.*/pwm_test_P9_14.*/");
 	cout << path << endl;
 	_pwmPinPaths.push_back(path);
+	echo("/sys/devices/bone_capemgr.9/slots", "bone_pwm_P9_16");
 	path = matchPath("/sys/devices/ocp.*/pwm_test_P9_16.*/");
 	cout << path << endl;
 	_pwmPinPaths.push_back(path);
