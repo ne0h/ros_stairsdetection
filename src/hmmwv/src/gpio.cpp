@@ -1,3 +1,11 @@
+/**
+ * Steps to do for pwm
+ * 1. "echo am33xx_pwm > /sys/devices/bone_capemgr.9/slots"
+ * 2. "echo bone_pwm_P8_13 > /sys/devices/bone_capemgr.9/slots"
+ * 3. "cd /sys/devices/ocp.3/pwm_test_P8_13.16/"
+ * 4. "echo 0 > duty" for max value or "echo 500000 > duty" for min value
+ */
+
 #include "gpio.hpp"
 #include <cassert>
 #include <glob.h>
@@ -6,7 +14,7 @@
 using namespace std;
 
 GPIO::GPIO() :
-	PWM_PERIOD(500000) // nanoseconds = 2000 Hz
+	PWM_PERIOD(50000) // nanoseconds = 2000 Hz
 {
 	// Enable the pwm pins
 	echo("/sys/devices/bone_capemgr.9/slots", "am33xx_pwm");
@@ -45,8 +53,9 @@ void GPIO::setPin(const Pin pin, const bool value)
 	assert(value == 0 || value == 1);
 
 	// already exported?
-	if (!containsPin(pin))
+	if (!containsPin(pin)) {
 		exportPin(pin);
+	}
 	
 	stringstream ss;
 	ss << "/sys/class/gpio/gpio" << pin << "/value";
@@ -75,7 +84,7 @@ void GPIO::setPwm(const PwmPin pin, const float dutyPerc)
 
 	// The beaglebone interprets duty == period as 0 V output and duty == 0 results in
 	// 3.3 V output, so we invert the value here to make 0 % duty correspond to 0 V output.
-	const int duty = (1.0 - dutyPerc) * (float)PWM_PERIOD;
+	const int duty = (1.0 - dutyPerc) * 500000;
 	int result = 0;
 	result = echo(append(_pwmPinPaths[pin], "duty"), duty);
 
@@ -88,8 +97,9 @@ bool GPIO::containsPin(const Pin pin)
 {
 	for (vector<int>::iterator it = _exportedPins.begin();
 			it != _exportedPins.end(); it++) {
-		if (*it == pin)
+		if (*it == pin) {
 			return true;
+		}
 	}
 	
 	return false;
