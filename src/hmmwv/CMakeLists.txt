@@ -6,10 +6,10 @@ project(hmmwv)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   roscpp
-  std_msgs
-  geometry_msgs
-  rospy
-  message_generation
+#  std_msgs
+#  geometry_msgs
+#  rospy
+#  message_generation
 )
 
 ## System dependencies are found with CMake's conventions
@@ -66,11 +66,11 @@ find_package(catkin REQUIRED COMPONENTS
 # )
 
 ## Generate added messages and services with any dependencies listed here
-generate_messages(
-  DEPENDENCIES
-  std_msgs
-  geometry_msgs
-)
+#generate_messages(
+#  DEPENDENCIES
+#  std_msgs
+#  geometry_msgs
+#)
 
 ###################################
 ## catkin specific configuration ##
@@ -84,8 +84,8 @@ generate_messages(
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES hmmwv
-  CATKIN_DEPENDS roscpp std_msgs geometry_msgs
-  CATKIN_DEPENDS message_runtime
+#  CATKIN_DEPENDS roscpp std_msgs geometry_msgs
+#  CATKIN_DEPENDS message_runtime
 #  DEPENDS system_lib
 )
 
