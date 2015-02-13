@@ -27,18 +27,22 @@ GPIO::GPIO() :
 	string path = matchPath("/sys/devices/ocp.*/pwm_test_P8_13.*/");
 	cout << path << endl;
 	_pwmPinPaths.push_back(path);
+	setPwm(P8_13, 0.0);
 	echo("/sys/devices/bone_capemgr.9/slots", "bone_pwm_P8_19");
 	path = matchPath("/sys/devices/ocp.*/pwm_test_P8_19.*/");
 	cout << path << endl;
 	_pwmPinPaths.push_back(path);
+	setPwm(P8_19, 0.0);
 	echo("/sys/devices/bone_capemgr.9/slots", "bone_pwm_P9_14");
 	path = matchPath("/sys/devices/ocp.*/pwm_test_P9_14.*/");
 	cout << path << endl;
 	_pwmPinPaths.push_back(path);
+	setPwm(P9_14, 0.0);
 	echo("/sys/devices/bone_capemgr.9/slots", "bone_pwm_P9_16");
 	path = matchPath("/sys/devices/ocp.*/pwm_test_P9_16.*/");
 	cout << path << endl;
 	_pwmPinPaths.push_back(path);
+	setPwm(P9_16, 0.0);
 
 	// Set PWM period for both outputs
 	int result = echo(append(_pwmPinPaths[P8_13], "period"), PWM_PERIOD);
