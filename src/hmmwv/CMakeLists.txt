@@ -7,7 +7,8 @@ project(hmmwv)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
 #  std_msgs
-#  geometry_msgs
+  geometry_msgs
+  tf
 #  rospy
 #  message_generation
 )
@@ -84,7 +85,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES hmmwv
-#  CATKIN_DEPENDS roscpp std_msgs geometry_msgs
+  CATKIN_DEPENDS roscpp geometry_msgs
 #  CATKIN_DEPENDS message_runtime
 #  DEPENDS system_lib
 )
