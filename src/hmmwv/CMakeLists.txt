@@ -132,6 +132,10 @@ add_executable(enginecontrol
 )
 target_link_libraries(enginecontrol ${catkin_LIBRARIES})
 
+add_executable(odometrytest
+	src/odometrytest.cpp
+)
+target_link_libraries(odometrytest ${catkin_LIBRARIES})
 #############
 ## Install ##
 #############
