@@ -1,0 +1,21 @@
+<launch>
+
+	<!--
+		ENGINECONTROL (STUFF)
+	-->
+
+	<node name="enginecontrol" pkg="hmmwv" type="enginecontrol" output="screen" />
+	
+	<!--
+		LASER STUFF
+	-->
+
+	<node pkg="tf" type="static_transform_publisher" name="base_link_to_laser" args="0.1 0.1 0.15 0.0 0.0 0.0 /base_link /laser 50" />
+	<node name="lms100" pkg="cob_sick_lms1xx" type="lms100">
+		<param name="host" value="192.168.1.2" />
+		<param name="frame_id" value="laser" />
+		<param name="angle_resolution" value="0.5" />
+		<param name="scan_frequency" value="25" />
+	</node>
+
+</launch>
