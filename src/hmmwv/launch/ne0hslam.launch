@@ -39,7 +39,7 @@
 		<param name="use_tf_pose_start_estimate" value="false"/>
     	<param name="pub_map_odom_transform" value="$(arg pub_map_odom_transform)"/>
     
-		<param name="map_resolution" value="0.050"/>
+		<param name="map_resolution" value="0.025"/>
     	<param name="map_size" value="$(arg map_size)"/>
     	<param name="map_start_x" value="0.5"/>
     	<param name="map_start_y" value="0.5" />
