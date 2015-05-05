@@ -10,7 +10,7 @@
 		LASER STUFF
 	-->
 
-	<node pkg="tf" type="static_transform_publisher" name="base_link_to_laser" args="0.05 0.0 0.17 0.0 0.0 0.0 /base_link /laser 50" />
+	<node pkg="tf" type="static_transform_publisher" name="base_link_to_laser" args="0.05 0.0 0.17 -0.1 0.0 0.0 /base_link /laser 50" />
 	<node name="lms100" pkg="cob_sick_lms1xx" type="lms100">
 		<param name="host" value="192.168.1.2" />
 		<param name="frame_id" value="laser" />
