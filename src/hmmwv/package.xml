@@ -49,6 +49,9 @@
   <build_depend>rospy</build_depend>
   <build_depend>tf2</build_depend>
   <build_depend>tf2_ros</build_depend>
+  <build_depend>pcl_conversions</build_depend>
+  <build_depend>pcl_ros</build_depend>
+  <build_depend>libpcl-all-dev</build_depend>
   <run_depend>message_runtime</run_depend>  
   <run_depend>roscpp</run_depend>
   <run_depend>std_msgs</run_depend>
@@ -58,6 +61,9 @@
   <run_depend>rospy</run_depend>
   <run_depend>tf2</run_depend>
   <run_depend>tf2_ros</run_depend>
+  <run_depend>pcl_conversionss</run_depend>
+  <run_depend>pcl_ros</run_depend>
+  <run_depend>libpcl-all</run_depend>
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>

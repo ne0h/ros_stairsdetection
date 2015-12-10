@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <launch>
 
-	<node name="stairwaydetector" pkg="hmmwv" type="stairwaydetector.py" output="screen">
+	<node name="stairwaydetector" pkg="hmmwv" type="stairwaydetector" output="screen">
 	</node>
 
 </launch>

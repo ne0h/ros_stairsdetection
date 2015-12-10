@@ -11,6 +11,9 @@ find_package(catkin REQUIRED COMPONENTS
   tf
 #  rospy
 #  message_generation
+  pcl_conversions
+  pcl_ros
+  
 )
 
 ## System dependencies are found with CMake's conventions
@@ -117,6 +120,11 @@ include_directories(
 # target_link_libraries(hmmwv_node
 #   ${catkin_LIBRARIES}
 # )
+
+add_executable(stairwaydetector
+	src/stairwaydetector.cpp
+)
+target_link_libraries(stairwaydetector ${catkin_LIBRARIES})
 
 add_executable(remotecontrol
 	src/remotecontrol.cpp
