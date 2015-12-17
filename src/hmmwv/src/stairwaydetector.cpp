@@ -21,16 +21,27 @@ void callback(const sensor_msgs::PointCloud2ConstPtr& input) {
 	pcl_conversions::toPCL(*input, *unfilteredCloud);
 
 	// create a voxelgrid to downsample the input data to speed things up.
-	pcl::PCLPointCloud2::Ptr cloudBlob (new pcl::PCLPointCloud2);
+	pcl::PCLPointCloud2::Ptr filteredCloud (new pcl::PCLPointCloud2);
 
 	pcl::VoxelGrid<pcl::PCLPointCloud2> sor;
 	sor.setInputCloud(unfilteredCloudPtr);
 	sor.setLeafSize(0.01f, 0.01f, 0.01f);
-	sor.filter(*cloudBlob);
+	sor.filter(*filteredCloud);
 
-	// convert to pointcloud
+	sensor_msgs::PointCloud2 output;
+	pcl_conversions::fromPCL(*filteredCloud, output);
+	pub.publish(output);
+
+	/*// convert to pointcloud
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
 	pcl::fromPCLPointCloud2(*cloudBlob, *cloud);
+
+	boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer(new pcl::visualization::PCLVisualizer("3D Viewer"));
+	viewer->setBackgroundColor (0, 0, 0);
+	viewer->addPointCloud<pcl::PointXYZ>(cloud, "sample cloud");
+	viewer->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 1, "sample cloud");
+	viewer->addCoordinateSystem(1.0);
+	viewer->initCameraParameters();
 
 	// Does the parametric segmentation
 	pcl::ModelCoefficients::Ptr coefficients(new pcl::ModelCoefficients);
@@ -79,11 +90,7 @@ void callback(const sensor_msgs::PointCloud2ConstPtr& input) {
 		i++;
 	//}
 
-	//exit(0);
-
-	sensor_msgs::PointCloud2 output;
-	pcl::toROSMsg(*cloud1, output);
-	pub.publish(output);
+	*/
 }
 
 int main(int argc, char **argv) {
@@ -91,7 +98,7 @@ int main(int argc, char **argv) {
 	ros::init(argc, argv, "stairwaydetector");
 	ros::NodeHandle nh;
 	ros::Subscriber sub = nh.subscribe<sensor_msgs::PointCloud2>("/camera/depth/points", 1, callback);
-	pub = nh.advertise<sensor_msgs::PointCloud2>("/output", 1);
+	pub = nh.advertise<sensor_msgs::PointCloud2>("/fuckingoutput", 1);
 	ros::spin();
 	
 	return 0;
