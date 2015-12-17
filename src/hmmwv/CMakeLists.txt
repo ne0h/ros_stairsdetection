@@ -124,7 +124,7 @@ include_directories(
 add_executable(stairwaydetector
 	src/stairwaydetector.cpp
 )
-target_link_libraries(stairwaydetector ${catkin_LIBRARIES} libvtkCommon.so libvtkFiltering.so)
+target_link_libraries(stairwaydetector ${catkin_LIBRARIES})
 
 add_executable(remotecontrol
 	src/remotecontrol.cpp
