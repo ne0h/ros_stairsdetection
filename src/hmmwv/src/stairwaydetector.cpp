@@ -4,6 +4,7 @@
 #include <sensor_msgs/PointCloud2.h>
 #include <geometry_msgs/PolygonStamped.h>
 #include <geometry_msgs/Point32.h>
+#include <visualization_msgs/MarkerArray.h>
 
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
@@ -14,60 +15,76 @@
 #include <pcl/features/moment_of_inertia_estimation.h>
 
 using namespace std;
-ros::Publisher pub0c;
-ros::Publisher pub1c;
-ros::Publisher pub2c;
-ros::Publisher pub3c;
-ros::Publisher pub4c;
-ros::Publisher pub5c;
-ros::Publisher pub0p;
-ros::Publisher pub1p;
-ros::Publisher pub2p;
-ros::Publisher pub3p;
-ros::Publisher pub4p;
-ros::Publisher pub5p;
+ros::Publisher pub;
 
 struct Plane {
-	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud;
 	pcl::PointXYZ min;
 	pcl::PointXYZ max;
 };
 
-//void getAABB(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, pcl::PointXYZ* min_point_AABB, pcl::PointXYZ* max_point_AABB) {
-void getAABB(struct Plane *plane) {
+void printROSPoint(geometry_msgs::Point *p) {
+	ROS_INFO("Point: %f %f %f", p->x, p->y, p->z);
+}
+
+void printPlane(struct Plane *plane) {
+	ROS_INFO("AABB: %f %f %f -> %f %f %f", plane->min.x, plane->min.y, plane->min.z, plane->max.x, plane->max.z,
+		plane->max.z);
+}
+
+void printPoint(pcl::PointXYZ *p) {
+	ROS_INFO("Point: %f %f %f", p->x, p->y, p->z);
+}
+
+void getAABB(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, struct Plane *plane) {
 	pcl::MomentOfInertiaEstimation<pcl::PointXYZ> feature_extractor;
-	feature_extractor.setInputCloud(plane->cloud);
+	feature_extractor.setInputCloud(cloud);
 	feature_extractor.compute();
 	feature_extractor.getAABB(plane->min, plane->max);
 }
 
-void buildRosMessage(geometry_msgs::PolygonStamped *output, struct Plane *plane) {
-	output->header.frame_id = "/base_link";
+void buildRosMarker(visualization_msgs::Marker *marker, struct Plane *plane) {
+	marker->header.frame_id = "base_link";
+	marker->header.stamp = ros::Time::now();
+	marker->ns = "hmmwv";
+	marker->id = 0;
 
-	geometry_msgs::Point32 p1;
+	marker->type = visualization_msgs::Marker::LINE_STRIP;
+	marker->action = visualization_msgs::Marker::ADD;
+
+	marker->scale.x = 0.1f;
+
+	marker->color.r = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+	marker->color.g = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+	marker->color.b = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+	marker->color.a = 1.0;
+
+	marker->lifetime = ros::Duration();
+
+	geometry_msgs::Point p1;
 	p1.x = plane->min.z;
 	p1.y = plane->min.x * (-1);
 	p1.z = plane->min.y * (-1);
 
-	geometry_msgs::Point32 p2;
+	geometry_msgs::Point p2;
 	p2.x = plane->min.z;
 	p2.y = plane->max.x * (-1);
 	p2.z = plane->min.y * (-1);
 
-	geometry_msgs::Point32 p3;
+	geometry_msgs::Point p3;
 	p3.x = plane->min.z;
 	p3.y = plane->max.x * (-1);
 	p3.z = plane->max.y * (-1);
 
-	geometry_msgs::Point32 p4;
+	geometry_msgs::Point p4;
 	p4.x = plane->min.z;
 	p4.y = plane->min.x * (-1);
 	p4.z = plane->max.y * (-1);
 
-	output->polygon.points.push_back(p1);
-	output->polygon.points.push_back(p2);
-	output->polygon.points.push_back(p3);
-	output->polygon.points.push_back(p4);
+	marker->points.push_back(p1);
+	marker->points.push_back(p2);
+	marker->points.push_back(p3);
+	marker->points.push_back(p4);
+	marker->points.push_back(p1);
 }
 
 void callback(const sensor_msgs::PointCloud2ConstPtr& input) {
@@ -103,11 +120,12 @@ void callback(const sensor_msgs::PointCloud2ConstPtr& input) {
 	seg.setDistanceThreshold(0.01);
 
 	pcl::ExtractIndices<pcl::PointXYZ> extract;
-	std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> planes0;
-
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud1(new pcl::PointCloud<pcl::PointXYZ>),
 		cloud2(new pcl::PointCloud<pcl::PointXYZ>);
-	unsigned int i = 0, pointsAtStart = cloud->points.size();
+	unsigned int pointsAtStart = cloud->points.size();
+
+	std::vector<struct Plane> planes;
+	visualization_msgs::MarkerArray markerArray;
 
 	// while 30% of the original cloud is still present
 	while (cloud->points.size() > 0.3 * pointsAtStart) {
@@ -130,77 +148,39 @@ void callback(const sensor_msgs::PointCloud2ConstPtr& input) {
 		extract.filter(*cloud2);
 		cloud.swap(cloud2);
 
-		planes0.push_back(cloud1);
-		i++;
+		// calculate AABB and add to planes list
+		struct Plane plane;
+		getAABB(cloud1, &plane);
+		printPlane(&plane);
+
+		visualization_msgs::Marker marker;
+		buildRosMarker(&marker, &plane);
+		markerArray.markers.push_back(marker);
 	}
 
-	std::vector<struct Plane> planes1;
-
+	// calculate AABBs
+	/*std::vector<struct Plane> planes1;
 	for (std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr>::iterator it = planes0.begin(); it != planes0.end(); it++) {
-		struct Plane plane;
+		
 		plane.cloud = *it;
 		getAABB(&plane);
 
 		planes1.push_back(plane);
 	}
 
-	geometry_msgs::PolygonStamped output0p;
-	buildRosMessage(&output0p, &planes1.at(0));
-	pub0p.publish(output0p);
+	visualization_msgs::MarkerArray markerArray;
+	for (std::vector<struct Plane>::iterator it = planes1.begin(); it != planes1.end(); it++) {
 
-	sensor_msgs::PointCloud2 output0c;
-	pcl::toROSMsg(*planes0.at(0), output0c);
-	pub0c.publish(output0c);
+		//printPlane(&(*it));
 
-	if (planes1.size() > 1) {
-		geometry_msgs::PolygonStamped output1p;
-		buildRosMessage(&output1p, &planes1.at(1));
-		pub1p.publish(output1p);
 
-		sensor_msgs::PointCloud2 output1c;
-		pcl::toROSMsg(*planes0.at(1), output1c);
-		pub1c.publish(output1c);
-	}
+		visualization_msgs::Marker marker;
+		buildRosMarker(&marker, &(*it));
 
-	if (planes1.size() > 2) {
-		geometry_msgs::PolygonStamped output2p;
-		buildRosMessage(&output2p, &planes1.at(2));
-		pub2p.publish(output2p);
+		markerArray.markers.push_back(marker);
+	}*/
 
-		sensor_msgs::PointCloud2 output2c;
-		pcl::toROSMsg(*planes0.at(2), output2c);
-		pub2c.publish(output0c);
-	}
-
-	if (planes1.size() > 3) {
-		geometry_msgs::PolygonStamped output3p;
-		buildRosMessage(&output3p, &planes1.at(3));
-		pub3p.publish(output3p);
-
-		sensor_msgs::PointCloud2 output3c;
-		pcl::toROSMsg(*planes0.at(3), output3c);
-		pub3c.publish(output0c);
-	}
-
-	if (planes1.size() > 4) {
-		geometry_msgs::PolygonStamped output4p;
-		buildRosMessage(&output4p, &planes1.at(4));
-		pub4p.publish(output4p);
-
-		sensor_msgs::PointCloud2 output4c;
-		pcl::toROSMsg(*planes0.at(4), output4c);
-		pub4c.publish(output4c);
-	}
-
-	if (planes1.size() > 5) {
-		geometry_msgs::PolygonStamped output5p;
-		buildRosMessage(&output5p, &planes1.at(5));
-		pub5p.publish(output5p);
-
-		sensor_msgs::PointCloud2 output5c;
-		pcl::toROSMsg(*planes0.at(5), output5c);
-		pub5c.publish(output5c);
-	}
+    pub.publish(markerArray);
 }
 
 int main(int argc, char **argv) {
@@ -208,18 +188,8 @@ int main(int argc, char **argv) {
 	ros::init(argc, argv, "stairwaydetector");
 	ros::NodeHandle nh;
 	ros::Subscriber sub = nh.subscribe<sensor_msgs::PointCloud2>("/camera/depth/points", 1, callback);
-	pub0c = nh.advertise<sensor_msgs::PointCloud2>("/fuckingoutput0", 1);
-	pub1c = nh.advertise<sensor_msgs::PointCloud2>("/fuckingoutput1", 1);
-	pub2c = nh.advertise<sensor_msgs::PointCloud2>("/fuckingoutput2", 1);
-	pub3c = nh.advertise<sensor_msgs::PointCloud2>("/fuckingoutput3", 1);
-	pub4c = nh.advertise<sensor_msgs::PointCloud2>("/fuckingoutput4", 1);
-	pub5c = nh.advertise<sensor_msgs::PointCloud2>("/fuckingoutput5", 1);
-	pub0p = nh.advertise<geometry_msgs::PolygonStamped>("/step0", 1);
-	pub1p = nh.advertise<geometry_msgs::PolygonStamped>("/step1", 1);
-	pub2p = nh.advertise<geometry_msgs::PolygonStamped>("/step2", 1);
-	pub3p = nh.advertise<geometry_msgs::PolygonStamped>("/step3", 1);
-	pub4p = nh.advertise<geometry_msgs::PolygonStamped>("/step4", 1);
-	pub5p = nh.advertise<geometry_msgs::PolygonStamped>("/step5", 1);
+	pub = nh.advertise<visualization_msgs::MarkerArray>("/hmmwv/steps", 0);
+
 	ros::spin();
 	
 	return 0;
