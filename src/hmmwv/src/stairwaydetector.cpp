@@ -42,43 +42,58 @@ void getAABB(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, struct Plane *plane) {
 	feature_extractor.getAABB(plane->min, plane->max);
 }
 
+/**
+ * Transforms a point from PCL coordinate system to ROS coordinate system
+ *
+ * Documentation:
+ * ROS: http://wiki.ros.org/geometry/CoordinateFrameConventions
+ */
+void transformPCLPointToROSPoint(pcl::PointXYZ *input, geometry_msgs::Point *output) {
+	output->x = input->z;
+	output->y = input->x * (-1.f);
+	output->z = input->y * (-1.f);
+}
+
 void buildRosMarker(visualization_msgs::Marker *marker, struct Plane *plane, unsigned int id) {
-	marker->header.frame_id = "base_link";
+	marker->header.frame_id = "camera_link";
 	marker->header.stamp = ros::Time::now();
 	marker->ns = "hmmwv";
 	marker->id = id;
+	marker->lifetime = ros::Duration();
 
 	marker->type = visualization_msgs::Marker::LINE_STRIP;
 	marker->action = visualization_msgs::Marker::ADD;
 
-	marker->scale.x = 0.1f;
+	marker->scale.x = 0.05f;
 
 	marker->color.r = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
 	marker->color.g = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
 	marker->color.b = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
 	marker->color.a = 1.0;
 
-	marker->lifetime = ros::Duration();
+	/*
+	 * Get vertices of the rectangle and transform them to ROS coordinates
+	 *
+	 *  p2-----------------p3
+	 *  |                   |
+	 *  |                   |
+	 *  p1-----------------p4
+	 *
+	 */
 
 	geometry_msgs::Point p1;
-	p1.x = plane->min.z;
-	p1.y = plane->min.x * (-1);
-	p1.z = plane->min.y * (-1);
+	transformPCLPointToROSPoint(&plane->min, &p1);
 
 	geometry_msgs::Point p2;
-	p2.x = plane->min.z;
-	p2.y = plane->max.x * (-1);
-	p2.z = plane->min.y * (-1);
+	pcl::PointXYZ leftTop(plane->min.x, plane->max.y, plane->min.z);
+	transformPCLPointToROSPoint(&leftTop, &p2);
 
 	geometry_msgs::Point p3;
-	p3.x = plane->min.z;
-	p3.y = plane->max.x * (-1);
-	p3.z = plane->max.y * (-1);
+	transformPCLPointToROSPoint(&plane->max, &p3);
 
 	geometry_msgs::Point p4;
-	p4.x = plane->min.z;
-	p4.y = plane->min.x * (-1);
-	p4.z = plane->max.y * (-1);
+	pcl::PointXYZ rightBottom(plane->max.x, plane->min.y, plane->max.z);
+	transformPCLPointToROSPoint(&rightBottom, &p4);
 
 	marker->points.push_back(p1);
 	marker->points.push_back(p2);
@@ -127,8 +142,8 @@ void callback(const sensor_msgs::PointCloud2ConstPtr& input) {
 	std::vector<struct Plane> planes;
 	visualization_msgs::MarkerArray markerArray;
 
-	// while 30% of the original cloud is still present
-	while (cloud->points.size() > 0.3 * pointsAtStart) {
+	// while 10% of the original cloud is still present
+	while (cloud->points.size() > 0.1 * pointsAtStart) {
 
 		seg.setInputCloud(cloud);
 		seg.segment(*inliers, *coefficients);
@@ -151,11 +166,15 @@ void callback(const sensor_msgs::PointCloud2ConstPtr& input) {
 		// calculate AABB and add to planes list
 		struct Plane plane;
 		getAABB(cloud1, &plane);
-		printPlane(&plane);
 
-		visualization_msgs::Marker marker;
-		buildRosMarker(&marker, &plane, id);
-		markerArray.markers.push_back(marker);
+		// calculate the height of the plane and remove planes with less than 5 cm or more than 40 cm
+		float height = plane.max.y - plane.min.y;
+		ROS_INFO("Height: %f", height);
+		if (height <= 0.4f && height >= 0.0f) {
+			visualization_msgs::Marker marker;
+			buildRosMarker(&marker, &plane, id);
+			markerArray.markers.push_back(marker);
+		}
 
 		id++;
 	}
