@@ -1,4 +1,5 @@
 #include <vector>
+#include <cmath>
 
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
@@ -103,15 +104,15 @@ void buildRosMarker(visualization_msgs::Marker *marker, struct Plane *plane, uns
 }
 
 void callback(const sensor_msgs::PointCloud2ConstPtr& input) {
-	ROS_INFO("Callback!");
+	ROS_INFO("===================================");
 
 	// convert from ros::pointcloud2 to pcl::pointcloud2
 	pcl::PCLPointCloud2* unfilteredCloud = new pcl::PCLPointCloud2;
 	pcl::PCLPointCloud2ConstPtr unfilteredCloudPtr(unfilteredCloud);
 	pcl_conversions::toPCL(*input, *unfilteredCloud);
 
-	// create a voxelgrid to downsample the input data to speed things up.
-	pcl::PCLPointCloud2::Ptr filteredCloud (new pcl::PCLPointCloud2);
+	// downsample the input data to speed things up.
+	pcl::PCLPointCloud2::Ptr filteredCloud(new pcl::PCLPointCloud2);
 
 	pcl::VoxelGrid<pcl::PCLPointCloud2> sor;
 	sor.setInputCloud(unfilteredCloudPtr);
@@ -122,7 +123,7 @@ void callback(const sensor_msgs::PointCloud2ConstPtr& input) {
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
 	pcl::fromPCLPointCloud2(*filteredCloud, *cloud);
 
-	// Does the parametric segmentation
+	// Do the parametric segmentation
 	pcl::ModelCoefficients::Ptr coefficients(new pcl::ModelCoefficients);
 	pcl::PointIndices::Ptr inliers(new pcl::PointIndices);
 
@@ -130,7 +131,7 @@ void callback(const sensor_msgs::PointCloud2ConstPtr& input) {
 	seg.setOptimizeCoefficients(true);
 
 	seg.setModelType(pcl::SACMODEL_PLANE);
-	seg.setModelType(pcl::SACMODEL_PLANE);
+	seg.setMethodType(pcl::SAC_RANSAC);
 	seg.setMaxIterations(1000);
 	seg.setDistanceThreshold(0.01);
 
@@ -142,8 +143,8 @@ void callback(const sensor_msgs::PointCloud2ConstPtr& input) {
 	std::vector<struct Plane> planes;
 	visualization_msgs::MarkerArray markerArray;
 
-	// while 10% of the original cloud is still present
-	while (cloud->points.size() > 0.1 * pointsAtStart) {
+	// while 5% of the original cloud is still present
+	while (cloud->points.size() > 0.05 * pointsAtStart) {
 
 		seg.setInputCloud(cloud);
 		seg.segment(*inliers, *coefficients);
@@ -167,10 +168,12 @@ void callback(const sensor_msgs::PointCloud2ConstPtr& input) {
 		struct Plane plane;
 		getAABB(cloud1, &plane);
 
-		// calculate the height of the plane and remove planes with less than 5 cm or more than 40 cm
+		// calculate the width of the plane and remove planes with less than 30cm
+		// calculate the height of the plane and remove planes with less than 5cm or more than 40cm
+		float width  = fabs(plane.max.x - plane.min.x);
 		float height = plane.max.y - plane.min.y;
-		ROS_INFO("Height: %f", height);
-		if (height <= 0.4f && height >= 0.0f) {
+		ROS_INFO("Width: %f | Height: %f", width, height);
+		if (width >= 0.3f && height <= 0.4f && height >= 0.15f) {
 			visualization_msgs::Marker marker;
 			buildRosMarker(&marker, &plane, id);
 			markerArray.markers.push_back(marker);
