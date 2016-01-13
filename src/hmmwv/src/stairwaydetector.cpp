@@ -42,11 +42,11 @@ void getAABB(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, struct Plane *plane) {
 	feature_extractor.getAABB(plane->min, plane->max);
 }
 
-void buildRosMarker(visualization_msgs::Marker *marker, struct Plane *plane) {
+void buildRosMarker(visualization_msgs::Marker *marker, struct Plane *plane, unsigned int id) {
 	marker->header.frame_id = "base_link";
 	marker->header.stamp = ros::Time::now();
 	marker->ns = "hmmwv";
-	marker->id = 0;
+	marker->id = id;
 
 	marker->type = visualization_msgs::Marker::LINE_STRIP;
 	marker->action = visualization_msgs::Marker::ADD;
@@ -122,7 +122,7 @@ void callback(const sensor_msgs::PointCloud2ConstPtr& input) {
 	pcl::ExtractIndices<pcl::PointXYZ> extract;
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud1(new pcl::PointCloud<pcl::PointXYZ>),
 		cloud2(new pcl::PointCloud<pcl::PointXYZ>);
-	unsigned int pointsAtStart = cloud->points.size();
+	unsigned int pointsAtStart = cloud->points.size(), id = 0;
 
 	std::vector<struct Plane> planes;
 	visualization_msgs::MarkerArray markerArray;
@@ -154,31 +154,11 @@ void callback(const sensor_msgs::PointCloud2ConstPtr& input) {
 		printPlane(&plane);
 
 		visualization_msgs::Marker marker;
-		buildRosMarker(&marker, &plane);
+		buildRosMarker(&marker, &plane, id);
 		markerArray.markers.push_back(marker);
+
+		id++;
 	}
-
-	// calculate AABBs
-	/*std::vector<struct Plane> planes1;
-	for (std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr>::iterator it = planes0.begin(); it != planes0.end(); it++) {
-		
-		plane.cloud = *it;
-		getAABB(&plane);
-
-		planes1.push_back(plane);
-	}
-
-	visualization_msgs::MarkerArray markerArray;
-	for (std::vector<struct Plane>::iterator it = planes1.begin(); it != planes1.end(); it++) {
-
-		//printPlane(&(*it));
-
-
-		visualization_msgs::Marker marker;
-		buildRosMarker(&marker, &(*it));
-
-		markerArray.markers.push_back(marker);
-	}*/
 
     pub.publish(markerArray);
 }
