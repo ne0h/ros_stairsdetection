@@ -104,7 +104,7 @@ void buildRosMarker(visualization_msgs::Marker *marker, struct Plane *plane, uns
 }
 
 void callback(const sensor_msgs::PointCloud2ConstPtr& input) {
-	ROS_INFO("===================================");
+	ROS_INFO("=================================================================");
 
 	// convert from ros::pointcloud2 to pcl::pointcloud2
 	pcl::PCLPointCloud2* unfilteredCloud = new pcl::PCLPointCloud2;
@@ -138,13 +138,14 @@ void callback(const sensor_msgs::PointCloud2ConstPtr& input) {
 	pcl::ExtractIndices<pcl::PointXYZ> extract;
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud1(new pcl::PointCloud<pcl::PointXYZ>),
 		cloud2(new pcl::PointCloud<pcl::PointXYZ>);
-	unsigned int pointsAtStart = cloud->points.size(), id = 0;
+	unsigned int pointsAtStart = cloud->points.size(), id = -1;
 
 	std::vector<struct Plane> planes;
 	visualization_msgs::MarkerArray markerArray;
 
-	// while 5% of the original cloud is still present
-	while (cloud->points.size() > 0.05 * pointsAtStart) {
+	// Extract a model and repeat while 0.5% of the original cloud is still present
+	while (cloud->points.size() > 0.005 * pointsAtStart) {
+		id++;
 
 		seg.setInputCloud(cloud);
 		seg.segment(*inliers, *coefficients);
@@ -168,18 +169,27 @@ void callback(const sensor_msgs::PointCloud2ConstPtr& input) {
 		struct Plane plane;
 		getAABB(cloud1, &plane);
 
-		// calculate the width of the plane and remove planes with less than 30cm
-		// calculate the height of the plane and remove planes with less than 5cm or more than 40cm
-		float width  = fabs(plane.max.x - plane.min.x);
-		float height = plane.max.y - plane.min.y;
-		ROS_INFO("Width: %f | Height: %f", width, height);
-		if (width >= 0.3f && height <= 0.4f && height >= 0.15f) {
-			visualization_msgs::Marker marker;
-			buildRosMarker(&marker, &plane, id);
-			markerArray.markers.push_back(marker);
+		const float width  = fabs(plane.max.x - plane.min.x);
+		const float height = fabs(plane.max.y - plane.min.y);
+		//ROS_INFO("Width: %f | Height: %f", width, height);
+
+		// Remove planes with less than 5cm or more than 40cm and remove rectangles with less than 40cm
+		if (height > 0.4f || height < 0.05f || width < 0.4f) {
+			continue;
 		}
 
-		id++;
+		// Remove rectangle that are not (more or less) orthogonal to the robot
+		const float depthDiff = fabs(plane.max.z - plane.min.z);
+		const float depthThreshold = 0.2f;
+		if (depthDiff > depthThreshold) {
+			continue;
+		}
+		
+		visualization_msgs::Marker marker;
+		buildRosMarker(&marker, &plane, id);
+		markerArray.markers.push_back(marker);
+
+		ROS_INFO("Width: %f | Height: %f | Height above zero: %f", width, height, plane.min.y);
 	}
 
     pub.publish(markerArray);
