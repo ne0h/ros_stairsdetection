@@ -1,5 +1,6 @@
 #include <vector>
 #include <cmath>
+#include <string>
 
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
@@ -17,6 +18,9 @@
 
 using namespace std;
 ros::Publisher pub;
+
+int   segmentationIterationSetting;
+float segmentationThresholdSetting;
 
 struct Plane {
 	pcl::PointXYZ min;
@@ -56,9 +60,14 @@ void transformPCLPointToROSPoint(pcl::PointXYZ *input, geometry_msgs::Point *out
 }
 
 void buildRosMarker(visualization_msgs::Marker *marker, struct Plane *plane, unsigned int id) {
-	marker->header.frame_id = "camera_link";
+	string cameraSetting;
+	string namespaceSetting;
+	ros::param::get("~parent_frame", cameraSetting);
+	ros::param::get("~namespace", namespaceSetting);
+
+	marker->header.frame_id = cameraSetting.c_str();
 	marker->header.stamp = ros::Time::now();
-	marker->ns = "hmmwv";
+	marker->ns = namespaceSetting.c_str();
 	marker->id = id;
 	marker->lifetime = ros::Duration();
 
@@ -67,6 +76,7 @@ void buildRosMarker(visualization_msgs::Marker *marker, struct Plane *plane, uns
 
 	marker->scale.x = 0.05f;
 
+	// generate random color to separate rectangles from each other
 	marker->color.r = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
 	marker->color.g = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
 	marker->color.b = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
@@ -132,12 +142,12 @@ void callback(const sensor_msgs::PointCloud2ConstPtr& input) {
 
 	seg.setModelType(pcl::SACMODEL_PLANE);
 	seg.setMethodType(pcl::SAC_RANSAC);
-	seg.setMaxIterations(1000);
-	seg.setDistanceThreshold(0.01);
+	seg.setMaxIterations(segmentationIterationSetting);
+	seg.setDistanceThreshold(segmentationThresholdSetting);
 
 	pcl::ExtractIndices<pcl::PointXYZ> extract;
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud1(new pcl::PointCloud<pcl::PointXYZ>),
-		cloud2(new pcl::PointCloud<pcl::PointXYZ>);
+			cloud2(new pcl::PointCloud<pcl::PointXYZ>);
 	unsigned int pointsAtStart = cloud->points.size(), id = -1;
 
 	std::vector<struct Plane> planes;
@@ -199,8 +209,20 @@ int main(int argc, char **argv) {
 
 	ros::init(argc, argv, "stairwaydetector");
 	ros::NodeHandle nh;
-	ros::Subscriber sub = nh.subscribe<sensor_msgs::PointCloud2>("/camera/depth/points", 1, callback);
-	pub = nh.advertise<visualization_msgs::MarkerArray>("/hmmwv/steps", 0);
+
+	/*
+	 * load parameters from launch file
+	 */
+	string inputSetting;
+	string outputSetting;
+	ros::param::get("~input",  inputSetting);
+	ros::param::get("~output", outputSetting);
+
+	ros::param::get("~segmentation_iterations", segmentationIterationSetting);
+	ros::param::get("~segmentation_threshold", segmentationThresholdSetting);
+	
+	ros::Subscriber sub = nh.subscribe<sensor_msgs::PointCloud2>(inputSetting.c_str(), 1, callback);
+	pub = nh.advertise<visualization_msgs::MarkerArray>(outputSetting.c_str(), 0);
 
 	ros::spin();
 	
