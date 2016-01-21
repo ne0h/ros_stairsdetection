@@ -3,12 +3,18 @@
 
 	<node name="stairwaydetector" pkg="hmmwv" type="stairwaydetector" output="screen">
 		<param name="input" value="/camera/depth/points" />
-		<param name="output" value="/hmmwv/steps" />
+		<param name="steps" value="/hmmwv/steps" />
+		<param name="stairway" value="/hmmwv/stairway" />
 		<param name="parent_frame" value="camera_link" />
 		<param name="namespace" value="hmmwv" />
+		<param name="publish_steps" value="false" />
+		<param name="publish_stairway" value="true" />
 
+		<param name="camera_height_above_ground" value="0.29" />
 		<param name="segmentation_iterations" value="1000" />
 		<param name="segmentation_threshold" value="0.01" />
+		<param name="min_step_height" value="0.12" />
+		<param name="max_step_height" value="0.25" />
 	</node>
 
 </launch>

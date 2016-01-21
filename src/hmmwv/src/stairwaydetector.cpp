@@ -17,14 +17,32 @@
 #include <pcl/features/moment_of_inertia_estimation.h>
 
 using namespace std;
-ros::Publisher pub;
+
+ros::Publisher pubSteps;
+ros::Publisher pubStairway;
+
+/**
+ * Loaded settings.
+ */
+
+bool publishStepsSetting;
+bool publishStairwaySetting;
+
+float cameraHeightAboveGroundSetting;
 
 int   segmentationIterationSetting;
 float segmentationThresholdSetting;
 
+float minStepHeightSetting;
+float maxStepHeightSetting;
+
 struct Plane {
 	pcl::PointXYZ min;
 	pcl::PointXYZ max;
+};
+
+struct Stairway {
+	vector<struct Plane> steps;
 };
 
 void printROSPoint(geometry_msgs::Point *p) {
@@ -151,7 +169,6 @@ void callback(const sensor_msgs::PointCloud2ConstPtr& input) {
 	unsigned int pointsAtStart = cloud->points.size(), id = -1;
 
 	std::vector<struct Plane> planes;
-	visualization_msgs::MarkerArray markerArray;
 
 	// Extract a model and repeat while 0.5% of the original cloud is still present
 	while (cloud->points.size() > 0.005 * pointsAtStart) {
@@ -183,8 +200,8 @@ void callback(const sensor_msgs::PointCloud2ConstPtr& input) {
 		const float height = fabs(plane.max.y - plane.min.y);
 		//ROS_INFO("Width: %f | Height: %f", width, height);
 
-		// Remove planes with less than 5cm or more than 40cm and remove rectangles with less than 40cm
-		if (height > 0.4f || height < 0.05f || width < 0.4f) {
+		// Remove planes with less than 5cm or more than 40cm and remove rectangles with  a width of less than 40cm
+		if (height > maxStepHeightSetting || height < minStepHeightSetting || width < 0.4f) {
 			continue;
 		}
 
@@ -194,15 +211,52 @@ void callback(const sensor_msgs::PointCloud2ConstPtr& input) {
 		if (depthDiff > depthThreshold) {
 			continue;
 		}
-		
-		visualization_msgs::Marker marker;
-		buildRosMarker(&marker, &plane, id);
-		markerArray.markers.push_back(marker);
 
-		ROS_INFO("Width: %f | Height: %f | Height above zero: %f", width, height, plane.min.y);
+		planes.push_back(plane);
 	}
 
-    pub.publish(markerArray);
+	/*
+	 * Try to build a stairway
+	 */
+
+	if (publishStairwaySetting) {
+
+		// search for starting step
+		struct Stairway stairway;
+		for (vector<struct Plane>::iterator it = planes.begin(); it != planes.end(); it++) {
+			if ((*it).min.y + cameraHeightAboveGroundSetting < 0.05) {
+				stairway.steps.push_back((*it));
+			}
+		}
+
+		// search for a second step
+		if (stairway.steps.size() > 0) {
+			for (vector<struct Plane>::iterator it = planes.begin(); it != planes.end(); it++) {
+				if (fabs((*it).min.y - stairway.steps.at(0).max.y) < 0.05) {
+					stairway.steps.push_back((*it));
+					break;
+				}
+			}
+		}
+
+		ROS_INFO("%d", (int) stairway.steps.size());
+	}
+
+	if (publishStepsSetting) {
+		visualization_msgs::MarkerArray markerArray;
+		for (vector<struct Plane>::iterator it = planes.begin(); it != planes.end(); it++) {
+			visualization_msgs::Marker marker;
+			buildRosMarker(&marker, &(*it), id);
+			markerArray.markers.push_back(marker);
+
+			const float width  = fabs((*it).max.x - (*it).min.x);
+			const float height = fabs((*it).max.y - (*it).min.y);
+			ROS_INFO("Width: %f | Height: %f | Height above zero: %f", width, height,
+				(*it).min.y + cameraHeightAboveGroundSetting);
+		}
+
+		pubSteps.publish(markerArray);
+	}
 }
 
 int main(int argc, char **argv) {
@@ -214,15 +268,26 @@ int main(int argc, char **argv) {
 	 * load parameters from launch file
 	 */
 	string inputSetting;
-	string outputSetting;
+	string stepsSetting;
+	string stairwaySetting;
 	ros::param::get("~input",  inputSetting);
-	ros::param::get("~output", outputSetting);
+	ros::param::get("~steps", stepsSetting);
+	ros::param::get("~stairway", stairwaySetting);
+
+	ros::param::get("~publish_steps", publishStepsSetting);
+	ros::param::get("~publish_stairway", publishStairwaySetting);
+
+	ros::param::get("~camera_height_above_ground", cameraHeightAboveGroundSetting);
 
 	ros::param::get("~segmentation_iterations", segmentationIterationSetting);
 	ros::param::get("~segmentation_threshold", segmentationThresholdSetting);
+
+	ros::param::get("~min_step_height", minStepHeightSetting);
+	ros::param::get("~max_step_height", maxStepHeightSetting);
 	
 	ros::Subscriber sub = nh.subscribe<sensor_msgs::PointCloud2>(inputSetting.c_str(), 1, callback);
-	pub = nh.advertise<visualization_msgs::MarkerArray>(outputSetting.c_str(), 0);
+	pubSteps    = nh.advertise<visualization_msgs::MarkerArray>(stepsSetting.c_str(), 0);
+	pubStairway = nh.advertise<visualization_msgs::MarkerArray>(stairwaySetting.c_str(), 0);
 
 	ros::spin();
 	
