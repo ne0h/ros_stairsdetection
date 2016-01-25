@@ -77,7 +77,23 @@ void transformPCLPointToROSPoint(pcl::PointXYZ *input, geometry_msgs::Point *out
 	output->z = input->y * (-1.f);
 }
 
-void buildRosMarker(visualization_msgs::Marker *marker, struct Plane *plane, unsigned int id) {
+/*
+ * Get vertices of the rectangle
+ *
+ *  p2-----------------p3
+ *  |                   |
+ *  |                   |
+ *  p1-----------------p4
+ *
+ */
+void buildStepFromAABB(struct Plane *plane, vector<pcl::PointXYZ> *points) {
+	points->push_back(plane->min);
+	points->push_back(pcl::PointXYZ(plane->min.x, plane->max.y, plane->min.z));
+	points->push_back(plane->max);
+	points->push_back(pcl::PointXYZ(plane->max.x, plane->min.y, plane->max.z));
+}
+
+void buildRosMarkerSteps(visualization_msgs::Marker *marker, vector<struct Plane> *planes) {
 	string cameraSetting;
 	string namespaceSetting;
 	ros::param::get("~parent_frame", cameraSetting);
@@ -86,52 +102,54 @@ void buildRosMarker(visualization_msgs::Marker *marker, struct Plane *plane, uns
 	marker->header.frame_id = cameraSetting.c_str();
 	marker->header.stamp = ros::Time::now();
 	marker->ns = namespaceSetting.c_str();
-	marker->id = id;
+	marker->id = 0;
 	marker->lifetime = ros::Duration();
 
-	marker->type = visualization_msgs::Marker::LINE_STRIP;
+	marker->type = visualization_msgs::Marker::LINE_LIST;
 	marker->action = visualization_msgs::Marker::ADD;
 
 	marker->scale.x = 0.05f;
-
-	// generate random color to separate rectangles from each other
-	marker->color.r = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
-	marker->color.g = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
-	marker->color.b = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+	marker->color.r = marker->color.g = marker->color.b = 0.f;
 	marker->color.a = 1.0;
 
-	/*
-	 * Get vertices of the rectangle and transform them to ROS coordinates
-	 *
-	 *  p2-----------------p3
-	 *  |                   |
-	 *  |                   |
-	 *  p1-----------------p4
-	 *
-	 */
+	for (vector<struct Plane>::iterator it = planes->begin(); it != planes->end(); it++) {
 
-	geometry_msgs::Point p1;
-	transformPCLPointToROSPoint(&plane->min, &p1);
+		vector<pcl::PointXYZ> points;
+		buildStepFromAABB(&(*it), &points);
 
-	geometry_msgs::Point p2;
-	pcl::PointXYZ leftTop(plane->min.x, plane->max.y, plane->min.z);
-	transformPCLPointToROSPoint(&leftTop, &p2);
+		geometry_msgs::Point p1;
+		transformPCLPointToROSPoint(&points.at(0), &p1);
 
-	geometry_msgs::Point p3;
-	transformPCLPointToROSPoint(&plane->max, &p3);
+		geometry_msgs::Point p2;
+		transformPCLPointToROSPoint(&points.at(1), &p2);
 
-	geometry_msgs::Point p4;
-	pcl::PointXYZ rightBottom(plane->max.x, plane->min.y, plane->max.z);
-	transformPCLPointToROSPoint(&rightBottom, &p4);
+		geometry_msgs::Point p3;
+		transformPCLPointToROSPoint(&points.at(2), &p3);
 
-	marker->points.push_back(p1);
-	marker->points.push_back(p2);
-	marker->points.push_back(p3);
-	marker->points.push_back(p4);
-	marker->points.push_back(p1);
+		geometry_msgs::Point p4;
+		transformPCLPointToROSPoint(&points.at(3), &p4);
+
+		marker->points.push_back(p1);
+		marker->points.push_back(p2);
+		marker->points.push_back(p2);
+		marker->points.push_back(p3);
+		marker->points.push_back(p3);
+		marker->points.push_back(p4);
+		marker->points.push_back(p4);
+		marker->points.push_back(p1);
+
+		const float width  = fabs((*it).max.x - (*it).min.x);
+		const float height = fabs((*it).max.y - (*it).min.y);
+		ROS_INFO("Width: %f | Height: %f | Height above zero: %f", width, height,
+			(*it).min.y + cameraHeightAboveGroundSetting);
+	}
 }
 
-void callback(const sensor_msgs::PointCloud2ConstPtr& input) {
+void buildROSMarkerStairway(visualization_msgs::Marker *marker, struct Stairway *stairway) {
+	buildRosMarkerSteps(marker, &stairway->steps);
+}
+
+void callback(const sensor_msgs::PointCloud2ConstPtr &input) {
 	ROS_INFO("=================================================================");
 
 	// convert from ros::pointcloud2 to pcl::pointcloud2
@@ -232,29 +250,31 @@ void callback(const sensor_msgs::PointCloud2ConstPtr& input) {
 		// search for a second step
 		if (stairway.steps.size() > 0) {
 			for (vector<struct Plane>::iterator it = planes.begin(); it != planes.end(); it++) {
-				if (fabs((*it).min.y - stairway.steps.at(0).max.y) < 0.05) {
+				if (fabs((*it).min.y - stairway.steps.at(0).max.y) < 0.03) {
 					stairway.steps.push_back((*it));
 					break;
 				}
 			}
 		}
 
+		// print some details
 		ROS_INFO("%d", (int) stairway.steps.size());
+		for (std::vector<struct Plane>::iterator it = stairway.steps.begin(); it != stairway.steps.end(); it++) {
+			ROS_INFO("Height: %f", (*it).min.y + cameraHeightAboveGroundSetting);
+		}
+
+		visualization_msgs::MarkerArray markerArray;
+		visualization_msgs::Marker marker;
+		buildROSMarkerStairway(&marker, &stairway);
+		markerArray.markers.push_back(marker);
+		pubStairway.publish(markerArray);
 	}
 
 	if (publishStepsSetting) {
 		visualization_msgs::MarkerArray markerArray;
-		for (vector<struct Plane>::iterator it = planes.begin(); it != planes.end(); it++) {
-			visualization_msgs::Marker marker;
-			buildRosMarker(&marker, &(*it), id);
-			markerArray.markers.push_back(marker);
-
-			const float width  = fabs((*it).max.x - (*it).min.x);
-			const float height = fabs((*it).max.y - (*it).min.y);
-			ROS_INFO("Width: %f | Height: %f | Height above zero: %f", width, height,
-				(*it).min.y + cameraHeightAboveGroundSetting);
-		}
-
+		visualization_msgs::Marker marker;
+		buildRosMarkerSteps(&marker, &planes);
+		markerArray.markers.push_back(marker);
 		pubSteps.publish(markerArray);
 	}
 }
