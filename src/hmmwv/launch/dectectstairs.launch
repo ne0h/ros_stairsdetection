@@ -7,7 +7,7 @@
 		<param name="stairway" value="/hmmwv/stairway" />
 		<param name="parent_frame" value="camera_link" />
 		<param name="namespace" value="hmmwv" />
-		<param name="publish_steps" value="false" />
+		<param name="publish_steps" value="true" />
 		<param name="publish_stairway" value="true" />
 
 		<param name="camera_height_above_ground" value="0.29" />

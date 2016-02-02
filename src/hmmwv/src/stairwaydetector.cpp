@@ -93,7 +93,7 @@ void buildStepFromAABB(struct Plane *plane, vector<pcl::PointXYZ> *points) {
 	points->push_back(pcl::PointXYZ(plane->max.x, plane->min.y, plane->max.z));
 }
 
-void buildRosMarkerSteps(visualization_msgs::Marker *marker, vector<struct Plane> *planes) {
+void buildRosMarkerSteps(visualization_msgs::Marker *marker, vector<struct Plane> *planes, float *color) {
 	string cameraSetting;
 	string namespaceSetting;
 	ros::param::get("~parent_frame", cameraSetting);
@@ -109,7 +109,9 @@ void buildRosMarkerSteps(visualization_msgs::Marker *marker, vector<struct Plane
 	marker->action = visualization_msgs::Marker::ADD;
 
 	marker->scale.x = 0.05f;
-	marker->color.r = marker->color.g = marker->color.b = 0.f;
+	marker->color.r = color[0];
+	marker->color.g = color[1];
+	marker->color.b = color[2];
 	marker->color.a = 1.0;
 
 	for (vector<struct Plane>::iterator it = planes->begin(); it != planes->end(); it++) {
@@ -145,12 +147,57 @@ void buildRosMarkerSteps(visualization_msgs::Marker *marker, vector<struct Plane
 	}
 }
 
-void buildROSMarkerStairway(visualization_msgs::Marker *marker, struct Stairway *stairway) {
-	buildRosMarkerSteps(marker, &stairway->steps);
+void buildROSMarkerStairway(visualization_msgs::Marker *marker, struct Stairway *stairway, float *color) {
+	
+	// draw front of the steps
+	buildRosMarkerSteps(marker, &stairway->steps, color);
+
+	// draw surface of the steps
+	if (stairway->steps.size() > 0) {
+		for (unsigned int i = 1; i < stairway->steps.size(); i++) {
+			vector<pcl::PointXYZ> pointsCur;
+			buildStepFromAABB(&stairway->steps.at(i), &pointsCur);
+			geometry_msgs::Point pc1;
+			transformPCLPointToROSPoint(&pointsCur.at(0), &pc1);
+			geometry_msgs::Point pc2;
+			transformPCLPointToROSPoint(&pointsCur.at(1), &pc2);
+			geometry_msgs::Point pc3;
+			transformPCLPointToROSPoint(&pointsCur.at(2), &pc3);
+			geometry_msgs::Point pc4;
+			transformPCLPointToROSPoint(&pointsCur.at(3), &pc4);
+
+			vector<pcl::PointXYZ> pointsBefore;
+			buildStepFromAABB(&stairway->steps.at(i - 1), &pointsBefore);
+			geometry_msgs::Point pb1;
+			transformPCLPointToROSPoint(&pointsBefore.at(0), &pb1);
+			geometry_msgs::Point pb2;
+			transformPCLPointToROSPoint(&pointsBefore.at(1), &pb2);
+			geometry_msgs::Point pb3;
+			transformPCLPointToROSPoint(&pointsBefore.at(2), &pb3);
+			geometry_msgs::Point pb4;
+			transformPCLPointToROSPoint(&pointsBefore.at(3), &pb4);
+
+			/*
+			 * Get vertices of the rectangle
+			 *
+			 *  p2-----------------p3
+			 *  |                   |
+			 *  |                   |
+			 *  p1-----------------p4
+			 *
+			 */
+
+			marker->points.push_back(pc1);
+			marker->points.push_back(pb2);
+			marker->points.push_back(pc4);
+			marker->points.push_back(pb3);
+		}
+	}
 }
 
 void callback(const sensor_msgs::PointCloud2ConstPtr &input) {
 	ROS_INFO("=================================================================");
+	ROS_INFO("New input data received.");
 
 	// convert from ros::pointcloud2 to pcl::pointcloud2
 	pcl::PCLPointCloud2* unfilteredCloud = new pcl::PCLPointCloud2;
@@ -186,7 +233,7 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &input) {
 			cloud2(new pcl::PointCloud<pcl::PointXYZ>);
 	unsigned int pointsAtStart = cloud->points.size(), id = -1;
 
-	std::vector<struct Plane> planes;
+	vector<struct Plane> planes;
 
 	// Extract a model and repeat while 0.5% of the original cloud is still present
 	while (cloud->points.size() > 0.005 * pointsAtStart) {
@@ -233,49 +280,88 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &input) {
 		planes.push_back(plane);
 	}
 
+	if (publishStepsSetting) {
+		ROS_INFO("-----------------------------------------------------------------");
+		ROS_INFO("Publishing %d steps:", (int) planes.size());
+
+		visualization_msgs::MarkerArray markerArray;
+		visualization_msgs::Marker marker;
+		float color[3];
+		color[0] = color[1] = 0.f;
+		color[2] = 1.f;
+		buildRosMarkerSteps(&marker, &planes, color);
+		markerArray.markers.push_back(marker);
+		pubSteps.publish(markerArray);
+	}
+
 	/*
 	 * Try to build a stairway
 	 */
 
 	if (publishStairwaySetting) {
+		ROS_INFO("-----------------------------------------------------------------");
 
 		// search for starting step
 		struct Stairway stairway;
+		vector<int> removeElements;
+		unsigned int i = 0;
 		for (vector<struct Plane>::iterator it = planes.begin(); it != planes.end(); it++) {
 			if ((*it).min.y + cameraHeightAboveGroundSetting < 0.05) {
 				stairway.steps.push_back((*it));
+				removeElements.push_back(i);
 			}
+
+			i++;
+		}
+		for (unsigned int i = 0; i < removeElements.size(); i++) {
+			planes.erase(planes.begin() + removeElements.at(i));
 		}
 
 		// search for a second step
 		if (stairway.steps.size() > 0) {
-			for (vector<struct Plane>::iterator it = planes.begin(); it != planes.end(); it++) {
-				if (fabs((*it).min.y - stairway.steps.at(0).max.y) < 0.03) {
-					stairway.steps.push_back((*it));
+			bool somethingChanged = false;
+			unsigned int stepCounter = 0;
+			while (planes.size() > 0) {
+
+				// look for new steps
+				vector<int> removeElements;
+				unsigned int i = 0;
+				for (vector<struct Plane>::iterator it = planes.begin(); it != planes.end(); it++) {
+					if (fabs((*it).min.y - stairway.steps.at(stepCounter).max.y) < 0.08) {
+						stairway.steps.push_back((*it));
+						somethingChanged = true;
+						removeElements.push_back(i);
+						stepCounter++;
+						break;
+					}
+
+					i++;
+				}
+
+				for (unsigned int i = 0; i < removeElements.size(); i++) {
+					planes.erase(planes.begin() + removeElements.at(i));
+				}
+
+				// check if there is something new in this iteration
+				if (!somethingChanged) {
 					break;
 				}
-			}
+
+				somethingChanged = false;
+			}	
 		}
 
 		// print some details
-		ROS_INFO("%d", (int) stairway.steps.size());
-		for (std::vector<struct Plane>::iterator it = stairway.steps.begin(); it != stairway.steps.end(); it++) {
-			ROS_INFO("Height: %f", (*it).min.y + cameraHeightAboveGroundSetting);
-		}
+		ROS_INFO("Publishing stairway with %d steps:", (int) stairway.steps.size());
 
 		visualization_msgs::MarkerArray markerArray;
 		visualization_msgs::Marker marker;
-		buildROSMarkerStairway(&marker, &stairway);
+		float color[3];
+		color[0] = color[2] = 0.f;
+		color[1] = 1.f;
+		buildROSMarkerStairway(&marker, &stairway, color);
 		markerArray.markers.push_back(marker);
 		pubStairway.publish(markerArray);
-	}
-
-	if (publishStepsSetting) {
-		visualization_msgs::MarkerArray markerArray;
-		visualization_msgs::Marker marker;
-		buildRosMarkerSteps(&marker, &planes);
-		markerArray.markers.push_back(marker);
-		pubSteps.publish(markerArray);
 	}
 }
 
