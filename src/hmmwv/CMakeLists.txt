@@ -6,11 +6,11 @@ project(hmmwv)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   roscpp
-#  std_msgs
+  std_msgs
   geometry_msgs
   tf
-#  rospy
-#  message_generation
+  rospy
+  message_generation
   pcl_conversions
   pcl_ros
   
@@ -56,11 +56,10 @@ find_package(catkin REQUIRED COMPONENTS
 #)
 
 ## Generate services in the 'srv' folder
-# add_service_files(
-#   FILES
-#   Service1.srv
-#   Service2.srv
-# )
+add_service_files(
+  FILES
+  ExportStairways.srv
+)
 
 ## Generate actions in the 'action' folder
 # add_action_files(
@@ -70,11 +69,11 @@ find_package(catkin REQUIRED COMPONENTS
 # )
 
 ## Generate added messages and services with any dependencies listed here
-#generate_messages(
-#  DEPENDENCIES
-#  std_msgs
+generate_messages(
+  DEPENDENCIES
+  std_msgs
 #  geometry_msgs
-#)
+)
 
 ###################################
 ## catkin specific configuration ##
@@ -124,7 +123,7 @@ include_directories(
 add_executable(stairwaydetector
 	src/stairwaydetector.cpp
 )
-target_link_libraries(stairwaydetector ${catkin_LIBRARIES})
+target_link_libraries(stairwaydetector ${catkin_LIBRARIES} yamĺ-cpp)
 
 add_executable(remotecontrol
 	src/remotecontrol.cpp

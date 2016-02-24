@@ -16,6 +16,10 @@
 #include <pcl/filters/extract_indices.h>
 #include <pcl/features/moment_of_inertia_estimation.h>
 
+#include <yaml-cpp/yaml.h>
+
+#include <hmmwv/ExportStairways.h>
+
 using namespace std;
 
 ros::Publisher pubSteps;
@@ -365,6 +369,19 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &input) {
 	}
 }
 
+bool exportStairways(hmmwv::ExportStairways::Request &req, hmmwv::ExportStairways::Response &res) {
+	const string path = req.path;
+
+	YAML::Node node = YAML::Load("[1, 2, 3]");
+
+
+	YAML::Emitter out;
+	out << node;
+
+	res.result = out.c_str();
+	return true;
+}
+
 int main(int argc, char **argv) {
 
 	ros::init(argc, argv, "stairwaydetector");
@@ -391,9 +408,17 @@ int main(int argc, char **argv) {
 	ros::param::get("~min_step_height", minStepHeightSetting);
 	ros::param::get("~max_step_height", maxStepHeightSetting);
 	
+	/*
+	 * Init subscriber and listener
+	 */
 	ros::Subscriber sub = nh.subscribe<sensor_msgs::PointCloud2>(inputSetting.c_str(), 1, callback);
 	pubSteps    = nh.advertise<visualization_msgs::MarkerArray>(stepsSetting.c_str(), 0);
 	pubStairway = nh.advertise<visualization_msgs::MarkerArray>(stairwaySetting.c_str(), 0);
+
+	/*
+	 * Init service get receive located stairways
+	 */
+	ros::ServiceServer exportService = nh.advertiseService("export_stairways", exportStairways); 
 
 	ros::spin();
 	
