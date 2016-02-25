@@ -1,6 +1,7 @@
 #include <vector>
 #include <cmath>
 #include <string>
+#include <fstream>
 
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
@@ -49,6 +50,8 @@ struct Stairway {
 	vector<struct Plane> steps;
 };
 
+vector<struct Stairway> stairways;
+
 void printROSPoint(geometry_msgs::Point *p) {
 	ROS_INFO("Point: %f %f %f", p->x, p->y, p->z);
 }
@@ -70,7 +73,7 @@ void getAABB(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, struct Plane *plane) {
 }
 
 /**
- * Transforms a point from PCL coordinate system to ROS coordinate system
+ * Transforms a point from PCL coordinate system to ROS coordinate system.
  *
  * Documentation:
  * ROS: http://wiki.ros.org/geometry/CoordinateFrameConventions
@@ -372,13 +375,55 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &input) {
 bool exportStairways(hmmwv::ExportStairways::Request &req, hmmwv::ExportStairways::Response &res) {
 	const string path = req.path;
 
-	YAML::Node node = YAML::Load("[1, 2, 3]");
+	// add test data
+	for (unsigned int i = 0; i < 3; i++) {
+		Stairway s;
+		Plane p1;
+		p1.min = pcl::PointXYZ(1*i, 2*i, 3*i);
+		p1.max = pcl::PointXYZ(1.5*i, 2.5*i, 3.5*i);
+		Plane p2;
+		p2.min = pcl::PointXYZ(1.1*i, 2.1*i, 3.1*i);
+		p2.max = pcl::PointXYZ(1.4*i, 2.4*i, 3.4*i);
+		Plane p3;
+		p3.min = pcl::PointXYZ(1.2*i, 2.2*i, 3.2*i);
+		p3.max = pcl::PointXYZ(1.3*i, 2.3*i, 3.3*i);
 
+		s.steps.push_back(p1);
+		s.steps.push_back(p2);
+		s.steps.push_back(p3);
 
-	YAML::Emitter out;
-	out << node;
+		stairways.push_back(s);
+	}
 
-	res.result = out.c_str();
+	YAML::Node stairwaysNode;
+
+	// traverse located stairways
+	for (vector<struct Stairway>::iterator it = stairways.begin(); it != stairways.end(); it++) {
+		YAML::Node stairwayNode;
+		YAML::Node pointsNode;
+
+		vector<pcl::PointXYZ> points;
+		buildStepFromAABB(&(*it).steps.at(0), &points);
+		for (vector<pcl::PointXYZ>::iterator jt = points.begin(); jt != points.end(); jt++) {
+			YAML::Node pointNode;
+
+			geometry_msgs::Point point;
+			transformPCLPointToROSPoint(&(*jt), &point);
+			pointNode["x"] = point.x;
+			pointNode["y"] = point.y;
+			pointNode["z"] = point.z;
+
+			pointsNode.push_back(pointNode);
+		}
+
+		stairwayNode["points"] = pointsNode;
+		stairwayNode["lenght"] = (*it).steps.size();
+		stairwaysNode["stairways"].push_back(stairwayNode);
+	}
+
+	ofstream fout(path.c_str());
+	fout << stairwaysNode << '\n';
+	res.result = "Written succesfully to " + path + ".";
 	return true;
 }
 
@@ -407,6 +452,11 @@ int main(int argc, char **argv) {
 
 	ros::param::get("~min_step_height", minStepHeightSetting);
 	ros::param::get("~max_step_height", maxStepHeightSetting);
+
+	/*
+	 * Init data structure
+	 */
+	stairways.clear();
 	
 	/*
 	 * Init subscriber and listener
