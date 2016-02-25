@@ -123,7 +123,7 @@ include_directories(
 add_executable(stairwaydetector
 	src/stairwaydetector.cpp
 )
-target_link_libraries(stairwaydetector ${catkin_LIBRARIES} yamĺ-cpp)
+target_link_libraries(stairwaydetector ${catkin_LIBRARIES} yaml-cpp)
 
 add_executable(remotecontrol
 	src/remotecontrol.cpp
