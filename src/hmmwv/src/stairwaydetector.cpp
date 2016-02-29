@@ -47,7 +47,8 @@ struct Plane {
 };
 
 struct Stairway {
-	vector<struct Plane> steps;
+	struct Plane root;
+	int length;
 };
 
 vector<struct Stairway> stairways;
@@ -403,7 +404,7 @@ bool exportStairways(hmmwv::ExportStairways::Request &req, hmmwv::ExportStairway
 		YAML::Node pointsNode;
 
 		vector<pcl::PointXYZ> points;
-		buildStepFromAABB(&(*it).steps.at(0), &points);
+		buildStepFromAABB(&(*it).root, &points);
 		for (vector<pcl::PointXYZ>::iterator jt = points.begin(); jt != points.end(); jt++) {
 			YAML::Node pointNode;
 
@@ -417,7 +418,7 @@ bool exportStairways(hmmwv::ExportStairways::Request &req, hmmwv::ExportStairway
 		}
 
 		stairwayNode["points"] = pointsNode;
-		stairwayNode["lenght"] = (*it).steps.size();
+		stairwayNode["lenght"] = (*it).length;
 		stairwaysNode["stairways"].push_back(stairwayNode);
 	}
 
