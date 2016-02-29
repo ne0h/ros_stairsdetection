@@ -47,8 +47,7 @@ struct Plane {
 };
 
 struct Stairway {
-	struct Plane root;
-	int length;
+	vector<struct Plane> steps;
 };
 
 vector<struct Stairway> stairways;
@@ -401,30 +400,42 @@ bool exportStairways(hmmwv::ExportStairways::Request &req, hmmwv::ExportStairway
 	// traverse located stairways
 	for (vector<struct Stairway>::iterator it = stairways.begin(); it != stairways.end(); it++) {
 		YAML::Node stairwayNode;
-		YAML::Node pointsNode;
 
-		vector<pcl::PointXYZ> points;
-		buildStepFromAABB(&(*it).root, &points);
-		for (vector<pcl::PointXYZ>::iterator jt = points.begin(); jt != points.end(); jt++) {
-			YAML::Node pointNode;
+		// iterate steps
+		for (vector<struct Plane>::iterator jt = (*it).steps.begin(); jt != (*it).steps.end(); jt++) {
+			YAML::Node stepNode;
 
-			geometry_msgs::Point point;
-			transformPCLPointToROSPoint(&(*jt), &point);
-			pointNode["x"] = point.x;
-			pointNode["y"] = point.y;
-			pointNode["z"] = point.z;
+			// get points
+			YAML::Node pointsNode;
+			vector<pcl::PointXYZ> points;
+			buildStepFromAABB(&(*jt), &points);
+			for (vector<pcl::PointXYZ>::iterator kt = points.begin(); kt != points.end(); kt++) {
+				YAML::Node pointNode;
 
-			pointsNode.push_back(pointNode);
+				geometry_msgs::Point point;
+				transformPCLPointToROSPoint(&(*kt), &point);
+				pointNode["x"] = point.x;
+				pointNode["y"] = point.y;
+				pointNode["z"] = point.z;
+
+				pointsNode["points"].push_back(pointNode);
+			}
+
+			stairwayNode["steps"].push_back(pointsNode);
 		}
 
-		stairwayNode["points"] = pointsNode;
-		stairwayNode["lenght"] = (*it).length;
 		stairwaysNode["stairways"].push_back(stairwayNode);
 	}
 
 	ofstream fout(path.c_str());
 	fout << stairwaysNode << '\n';
 	res.result = "Written succesfully to " + path + ".";
+	return true;
+}
+
+bool importStairways(hmmwv::ExportStairways::Request &req, hmmwv::ExportStairways::Response &res) {
+	const string path = req.path;
+
 	return true;
 }
 
@@ -458,7 +469,7 @@ int main(int argc, char **argv) {
 	 * Init data structure
 	 */
 	stairways.clear();
-	
+
 	/*
 	 * Init subscriber and listener
 	 */
@@ -469,9 +480,10 @@ int main(int argc, char **argv) {
 	/*
 	 * Init service get receive located stairways
 	 */
-	ros::ServiceServer exportService = nh.advertiseService("export_stairways", exportStairways); 
+	ros::ServiceServer exportService = nh.advertiseService("export_stairways", exportStairways);
+	ros::ServiceServer importService = nh.advertiseService("import_stairways", importStairways);
 
 	ros::spin();
-	
+
 	return 0;
 }

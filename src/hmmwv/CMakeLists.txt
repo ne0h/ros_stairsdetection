@@ -57,8 +57,9 @@ find_package(catkin REQUIRED COMPONENTS
 
 ## Generate services in the 'srv' folder
 add_service_files(
-  FILES
-  ExportStairways.srv
+		FILES
+		ExportStairways.srv
+		ImportStairways.srv
 )
 
 ## Generate actions in the 'action' folder
