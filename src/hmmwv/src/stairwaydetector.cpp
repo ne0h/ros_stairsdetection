@@ -2,6 +2,7 @@
 #include <cmath>
 #include <string>
 #include <fstream>
+#include <sstream>
 
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
@@ -409,6 +410,7 @@ bool exportStairways(hmmwv::ExportStairways::Request &req, hmmwv::ExportStairway
 			YAML::Node pointsNode;
 			vector<pcl::PointXYZ> points;
 			buildStepFromAABB(&(*jt), &points);
+			unsigned int i = 1;
 			for (vector<pcl::PointXYZ>::iterator kt = points.begin(); kt != points.end(); kt++) {
 				YAML::Node pointNode;
 
@@ -418,7 +420,10 @@ bool exportStairways(hmmwv::ExportStairways::Request &req, hmmwv::ExportStairway
 				pointNode["y"] = point.y;
 				pointNode["z"] = point.z;
 
-				pointsNode["points"].push_back(pointNode);
+				ostringstream convert;
+				convert << "p" << i;
+				pointsNode["points"][convert.str()] = pointNode;
+				i++;
 			}
 
 			stairwayNode["steps"].push_back(pointsNode);
