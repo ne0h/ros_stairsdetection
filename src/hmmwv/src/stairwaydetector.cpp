@@ -403,6 +403,7 @@ bool exportStairways(hmmwv::ExportStairways::Request &req, hmmwv::ExportStairway
 		YAML::Node stairwayNode;
 
 		// iterate steps
+		unsigned int i = 0;
 		for (vector<struct Plane>::iterator jt = (*it).steps.begin(); jt != (*it).steps.end(); jt++) {
 			YAML::Node stepNode;
 
@@ -410,7 +411,7 @@ bool exportStairways(hmmwv::ExportStairways::Request &req, hmmwv::ExportStairway
 			YAML::Node pointsNode;
 			vector<pcl::PointXYZ> points;
 			buildStepFromAABB(&(*jt), &points);
-			unsigned int i = 1;
+			unsigned int j = 1;
 			for (vector<pcl::PointXYZ>::iterator kt = points.begin(); kt != points.end(); kt++) {
 				YAML::Node pointNode;
 
@@ -421,12 +422,18 @@ bool exportStairways(hmmwv::ExportStairways::Request &req, hmmwv::ExportStairway
 				pointNode["z"] = point.z;
 
 				ostringstream convert;
-				convert << "p" << i;
-				pointsNode["points"][convert.str()] = pointNode;
-				i++;
+				convert << "p" << j;
+				const string p = convert.str();
+				convert.clear();
+				convert.str("");
+				convert << "s" << i;
+
+				pointsNode[convert.str()][p] = pointNode;
+				j++;
 			}
 
 			stairwayNode["steps"].push_back(pointsNode);
+			i++;
 		}
 
 		stairwaysNode["stairways"].push_back(stairwayNode);
