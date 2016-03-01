@@ -3,6 +3,7 @@
 #include <string>
 #include <fstream>
 #include <sstream>
+#include <iostream>
 
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
@@ -62,6 +63,22 @@ void printPlane(struct Plane *plane) {
 		plane->max.z);
 }
 
+void printStairway(struct Stairway *stairway) {
+	for (vector<struct Plane>::iterator it = stairway->steps.begin(); it != stairway->steps.end(); it++) {
+		ROS_INFO("Min: %f | %f | %f", (*it).min.x, (*it).min.y, (*it).min.z);
+		ROS_INFO("Max: %f | %f | %f", (*it).max.x, (*it).max.y, (*it).max.z);
+		ROS_INFO("----------------");
+	}
+}
+
+void printAllStairways() {
+	for (vector<struct Stairway>::iterator it = stairways.begin(); it != stairways.end(); it++) {
+		ROS_INFO("################################");
+		printStairway(&(*it));
+	}
+	ROS_INFO("################################");
+}
+
 void printPoint(pcl::PointXYZ *p) {
 	ROS_INFO("Point: %f %f %f", p->x, p->y, p->z);
 }
@@ -83,6 +100,18 @@ void transformPCLPointToROSPoint(pcl::PointXYZ *input, geometry_msgs::Point *out
 	output->x = input->z;
 	output->y = input->x * (-1.f);
 	output->z = input->y * (-1.f);
+}
+
+/**
+ * Transforms a point from ROS coordinate system to PCL coordinate system.
+ *
+ * Documentation:
+ * ROS: http://wiki.ros.org/geometry/CoordinateFrameConventions
+ */
+void transformROSPointTOPCLPoint(geometry_msgs::Point *input, pcl::PointXYZ *output) {
+	output->x = input->y * (-1.f);
+	output->y = input->z * (-1.f);
+	output->z = input->x;
 }
 
 /*
@@ -374,28 +403,6 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &input) {
 }
 
 bool exportStairways(hmmwv::ExportStairways::Request &req, hmmwv::ExportStairways::Response &res) {
-	const string path = req.path;
-
-	// add test data
-	for (unsigned int i = 0; i < 3; i++) {
-		Stairway s;
-		Plane p1;
-		p1.min = pcl::PointXYZ(1*i, 2*i, 3*i);
-		p1.max = pcl::PointXYZ(1.5*i, 2.5*i, 3.5*i);
-		Plane p2;
-		p2.min = pcl::PointXYZ(1.1*i, 2.1*i, 3.1*i);
-		p2.max = pcl::PointXYZ(1.4*i, 2.4*i, 3.4*i);
-		Plane p3;
-		p3.min = pcl::PointXYZ(1.2*i, 2.2*i, 3.2*i);
-		p3.max = pcl::PointXYZ(1.3*i, 2.3*i, 3.3*i);
-
-		s.steps.push_back(p1);
-		s.steps.push_back(p2);
-		s.steps.push_back(p3);
-
-		stairways.push_back(s);
-	}
-
 	YAML::Node stairwaysNode;
 
 	// traverse located stairways
@@ -437,6 +444,7 @@ bool exportStairways(hmmwv::ExportStairways::Request &req, hmmwv::ExportStairway
 		stairwaysNode["stairways"].push_back(stairwayNode);
 	}
 
+	const string path = req.path;
 	ofstream fout(path.c_str());
 	fout << stairwaysNode << '\n';
 	res.result = "Written succesfully to " + path + ".";
@@ -444,8 +452,45 @@ bool exportStairways(hmmwv::ExportStairways::Request &req, hmmwv::ExportStairway
 }
 
 bool importStairways(hmmwv::ExportStairways::Request &req, hmmwv::ExportStairways::Response &res) {
-	const string path = req.path;
 
+	// clear current data
+	stairways.clear();
+
+	// iterate stairways
+	YAML::Node root = YAML::LoadFile(req.path);
+	for (YAML::const_iterator it = root["stairways"].begin(); it != root["stairways"].end(); it++) {
+		struct Stairway stairway;
+
+		// iterate steps
+		for (unsigned int i = 0; i < (*it).size(); i++) {
+			struct Plane step;
+
+			ostringstream convert;
+			convert << "s" << i;
+
+			geometry_msgs::Point p1ROS;
+			p1ROS.x = (*it)[convert.str()]["p1"]["x"].as<double>();
+			p1ROS.y = (*it)[convert.str()]["p1"]["y"].as<double>();
+			p1ROS.z = (*it)[convert.str()]["p1"]["z"].as<double>();
+			pcl::PointXYZ p1PCL;
+			transformROSPointTOPCLPoint(&p1ROS, &p1PCL);
+			step.min = p1PCL;
+
+			geometry_msgs::Point p3ROS;
+			p3ROS.x = (*it)[convert.str()]["p3"]["x"].as<double>();
+			p3ROS.y = (*it)[convert.str()]["p3"]["y"].as<double>();
+			p3ROS.z = (*it)[convert.str()]["p3"]["z"].as<double>();
+			pcl::PointXYZ p3PCL;
+			transformROSPointTOPCLPoint(&p3ROS, &p3PCL);
+			step.max = p3PCL;
+
+			stairway.steps.push_back(step);
+		}
+
+		stairways.push_back(stairway);
+	}
+
+	res.result = "Seems like the import has worked.";
 	return true;
 }
 
@@ -492,6 +537,26 @@ int main(int argc, char **argv) {
 	 */
 	ros::ServiceServer exportService = nh.advertiseService("export_stairways", exportStairways);
 	ros::ServiceServer importService = nh.advertiseService("import_stairways", importStairways);
+
+	// add test data
+	for (unsigned int i = 0; i < 3; i++) {
+		Stairway s;
+		Plane p1;
+		p1.min = pcl::PointXYZ(1*i, 2*i, 3*i);
+		p1.max = pcl::PointXYZ(1.5*i, 2.5*i, 3.5*i);
+		Plane p2;
+		p2.min = pcl::PointXYZ(1.1*i, 2.1*i, 3.1*i);
+		p2.max = pcl::PointXYZ(1.4*i, 2.4*i, 3.4*i);
+		Plane p3;
+		p3.min = pcl::PointXYZ(1.2*i, 2.2*i, 3.2*i);
+		p3.max = pcl::PointXYZ(1.3*i, 2.3*i, 3.3*i);
+
+		s.steps.push_back(p1);
+		s.steps.push_back(p2);
+		s.steps.push_back(p3);
+
+		stairways.push_back(s);
+	}
 
 	ros::spin();
 
