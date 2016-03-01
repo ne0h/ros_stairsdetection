@@ -423,16 +423,14 @@ bool exportStairways(hmmwv::ExportStairways::Request &req, hmmwv::ExportStairway
 
 				ostringstream convert;
 				convert << "p" << j;
-				const string p = convert.str();
-				convert.clear();
-				convert.str("");
-				convert << "s" << i;
 
-				pointsNode[convert.str()][p] = pointNode;
+				pointsNode[convert.str()] = pointNode;
 				j++;
 			}
 
-			stairwayNode["steps"].push_back(pointsNode);
+			ostringstream convert;
+			convert << "s" << i;
+			stairwayNode[convert.str()] = pointsNode;
 			i++;
 		}
 
