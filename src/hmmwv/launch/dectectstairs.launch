@@ -6,9 +6,11 @@
 		<param name="steps" value="/hmmwv/steps" />
 		<param name="stairway" value="/hmmwv/stairway" />
 		<param name="parent_frame" value="camera_link" />
+		<param name="world_frame" value="base_link" />
 		<param name="namespace" value="hmmwv" />
-		<param name="publish_steps" value="true" />
+		<param name="publish_steps" value="false" />
 		<param name="publish_stairway" value="true" />
+		<param name="use_sample_data" value="false" />
 
 		<param name="camera_height_above_ground" value="0.29" />
 		<param name="segmentation_iterations" value="1000" />

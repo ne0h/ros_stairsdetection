@@ -60,6 +60,7 @@ add_service_files(
 		FILES
 		ExportStairways.srv
 		ImportStairways.srv
+		ClearStairways.srv
 )
 
 ## Generate actions in the 'action' folder
