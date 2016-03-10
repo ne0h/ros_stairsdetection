@@ -29,6 +29,10 @@
 
 using namespace std;
 
+// forward declarations
+void transformStairwayToWorldCoordinates(struct Stairway *stairway);
+bool stairwayAlreadyKnown(struct Stairway *stairway);
+
 ros::Publisher pubSteps;
 ros::Publisher pubStairway;
 
@@ -116,7 +120,7 @@ void transformPCLPointToROSPoint(pcl::PointXYZ *input, geometry_msgs::Point *out
  * Documentation:
  * ROS: http://wiki.ros.org/geometry/CoordinateFrameConventions
  */
-void transformROSPointTOPCLPoint(geometry_msgs::Point *input, pcl::PointXYZ *output) {
+void transformROSPointToPCLPoint(geometry_msgs::Point *input, pcl::PointXYZ *output) {
 	output->x = input->y * (-1.f);
 	output->y = input->z * (-1.f);
 	output->z = input->x;
@@ -137,6 +141,8 @@ bool transformToWorldCoordinates(geometry_msgs::Point *p) {
 	p->x = p->x + ts.transform.translation.x;
 	p->y = p->y + ts.transform.translation.z;
 	p->z = p->z + ts.transform.translation.z;
+
+	return true;
 }
 
 bool transformToBaseLinkCoordinates(geometry_msgs::Point *p) {
@@ -154,6 +160,17 @@ bool transformToBaseLinkCoordinates(geometry_msgs::Point *p) {
 	p->x = p->x - ts.transform.translation.x;
 	p->y = p->y - ts.transform.translation.z;
 	p->z = p->z - ts.transform.translation.z;
+
+	return true;
+}
+
+bool transformToWorldCoordinates(pcl::PointXYZ *p) {
+	geometry_msgs::Point tmp;
+	transformPCLPointToROSPoint(p, &tmp);
+	if (!transformToWorldCoordinates(&tmp))
+		return false;
+	transformROSPointToPCLPoint(&tmp, p);
+	return true;
 }
 
 /*
@@ -445,11 +462,37 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &input) {
 		}	
 	}
 
-	if (stairways.size() == 0) {
+	// transform to world coordinates
+	transformStairwayToWorldCoordinates(&stairway);
+
+	// check if this stairway is already known
+	if (!stairwayAlreadyKnown(&stairway)) {
 		stairways.push_back(stairway);
+		showStairwaysInRVIZ();
+	}
+}
+
+void transformStairwayToWorldCoordinates(struct Stairway *stairway) {
+	for (vector<struct Plane>::iterator it = stairway->steps.begin(); it != stairway->steps.end(); it++) {
+		transformToWorldCoordinates(&(*it).min);
+		transformToWorldCoordinates(&(*it).max);
+	}
+}
+
+bool stairwayAlreadyKnown(struct Stairway *stairway) {
+	for (vector<struct Stairway>::iterator it = stairways.begin(); it != stairways.end(); it++) {
+		const float tolerance = 0.1f;
+		if (	   fabs((*it).steps.at(0).min.x - stairway->steps.at(0).min.x) > tolerance
+				&& fabs((*it).steps.at(0).min.y - stairway->steps.at(0).min.y) > tolerance
+				&& fabs((*it).steps.at(0).min.z - stairway->steps.at(0).min.z) > tolerance
+				&& fabs((*it).steps.at(0).max.x - stairway->steps.at(0).max.x) > tolerance
+				&& fabs((*it).steps.at(0).max.y - stairway->steps.at(0).max.y) > tolerance
+				&& fabs((*it).steps.at(0).max.z - stairway->steps.at(0).max.z) > tolerance) {
+			return true;
+		}
 	}
 
-	showStairwaysInRVIZ();
+	return false;
 }
 
 bool exportStairways(hmmwv::ExportStairways::Request &req, hmmwv::ExportStairways::Response &res) {
@@ -474,7 +517,7 @@ bool exportStairways(hmmwv::ExportStairways::Request &req, hmmwv::ExportStairway
 
 				geometry_msgs::Point point;
 				transformPCLPointToROSPoint(&(*kt), &point);
-				transformToWorldCoordinates(&point);
+				//transformToWorldCoordinates(&point);
 				pointNode["x"] = point.x;
 				pointNode["y"] = point.y;
 				pointNode["z"] = point.z;
@@ -523,18 +566,18 @@ bool importStairways(hmmwv::ImportStairways::Request &req, hmmwv::ImportStairway
 			p1ROS.x = (*it)[convert.str()]["p1"]["x"].as<double>();
 			p1ROS.y = (*it)[convert.str()]["p1"]["y"].as<double>();
 			p1ROS.z = (*it)[convert.str()]["p1"]["z"].as<double>();
-			transformToBaseLinkCoordinates(&p1ROS);
+			//transformToBaseLinkCoordinates(&p1ROS);
 			pcl::PointXYZ p1PCL;
-			transformROSPointTOPCLPoint(&p1ROS, &p1PCL);
+			transformROSPointToPCLPoint(&p1ROS, &p1PCL);
 			step.min = p1PCL;
 
 			geometry_msgs::Point p3ROS;
 			p3ROS.x = (*it)[convert.str()]["p3"]["x"].as<double>();
 			p3ROS.y = (*it)[convert.str()]["p3"]["y"].as<double>();
 			p3ROS.z = (*it)[convert.str()]["p3"]["z"].as<double>();
-			transformToBaseLinkCoordinates(&p3ROS);
+			//transformToBaseLinkCoordinates(&p3ROS);
 			pcl::PointXYZ p3PCL;
-			transformROSPointTOPCLPoint(&p3ROS, &p3PCL);
+			transformROSPointToPCLPoint(&p3ROS, &p3PCL);
 			step.max = p3PCL;
 
 			stairway.steps.push_back(step);
