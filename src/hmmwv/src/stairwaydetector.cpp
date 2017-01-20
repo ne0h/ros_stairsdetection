@@ -394,7 +394,7 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &input) {
 
 	if (publishStepsSetting) {
 		ROS_INFO("-----------------------------------------------------------------");
-		ROS_INFO("Publishing %d steps:", (int) planes.size());
+		ROS_INFO("Publishing %d step(s):", (int) planes.size());
 
 		visualization_msgs::MarkerArray markerArray;
 		visualization_msgs::Marker marker;
@@ -466,7 +466,7 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &input) {
 	transformStairwayToWorldCoordinates(&stairway);
 
 	// check if this stairway is already known
-	if (!stairwayAlreadyKnown(&stairway)) {
+	if (!stairwayAlreadyKnown(&stairway) && stairway.steps.size() > 0) {
 		stairways.push_back(stairway);
 		showStairwaysInRVIZ();
 	}
