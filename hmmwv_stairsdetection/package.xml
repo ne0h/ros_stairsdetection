@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package>
-  <name>hmmwv</name>
+  <name>hmmwv_detection</name>
   <version>0.1.0</version>
   <description>Hmmwvs your life!</description>
 
@@ -46,7 +46,6 @@
   <build_depend>tf</build_depend>
   <build_depend>nav_msgs</build_depend>
   <build_depend>geometry_msgs</build_depend>
-  <build_depend>rospy</build_depend>
   <build_depend>tf2</build_depend>
   <build_depend>tf2_ros</build_depend>
   <build_depend>pcl_conversions</build_depend>
@@ -59,7 +58,6 @@
   <run_depend>tf</run_depend>
   <run_depend>nav_msgs</run_depend>
   <run_depend>geometry_msgs</run_depend>
-  <run_depend>rospy</run_depend>
   <run_depend>tf2</run_depend>
   <run_depend>tf2_ros</run_depend>
   <run_depend>pcl_conversionss</run_depend>

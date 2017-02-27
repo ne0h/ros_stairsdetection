@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(hmmwv)
+project(hmmwv_stairsdetection)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -9,11 +9,9 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   geometry_msgs
   tf
-  rospy
   message_generation
   pcl_conversions
   pcl_ros
-  
 )
 
 ## System dependencies are found with CMake's conventions
@@ -123,26 +121,9 @@ include_directories(
 # )
 
 add_executable(stairwaydetector
-	src/stairwaydetector.cpp
+	src/stairwaydetection.cpp
 )
-target_link_libraries(stairwaydetector ${catkin_LIBRARIES} yaml-cpp)
-
-add_executable(remotecontrol
-	src/remotecontrol.cpp
-	src/joystick.cpp
-	src/joystickevent.cpp
-)
-target_link_libraries(remotecontrol ${catkin_LIBRARIES} SDL)
-
-add_executable(enginecontrol
-	src/enginecontrol.cpp
-)
-target_link_libraries(enginecontrol ${catkin_LIBRARIES})
-
-add_executable(odometrytest
-	src/odometrytest.cpp
-)
-target_link_libraries(odometrytest ${catkin_LIBRARIES})
+target_link_libraries(stairwaydetection ${catkin_LIBRARIES} yaml-cpp)
 
 find_package(catkin REQUIRED
 	COMPONENTS roslaunch
@@ -162,11 +143,6 @@ roslaunch_add_file_check(launch)
 #   scripts/my_python_script
 #   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 # )
-
-install(PROGRAMS
-	nodes/odomtransformer.py
-	DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-)
 
 ## Mark executables and/or libraries for installation
 # install(TARGETS hmmwv hmmwv_node
@@ -188,11 +164,6 @@ install(PROGRAMS
 #   # myfile2
 #   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 # )
-
-install(FILES
-	odomtransformer.launch
-	DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
-)
 
 #############
 ## Testing ##
