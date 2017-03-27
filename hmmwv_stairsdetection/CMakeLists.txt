@@ -56,9 +56,9 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate services in the 'srv' folder
 add_service_files(
 		FILES
-		ExportStairways.srv
-		ImportStairways.srv
-		ClearStairways.srv
+		ExportStairs.srv
+		ImportStairs.srv
+		ClearStairs.srv
 )
 
 ## Generate actions in the 'action' folder
@@ -120,10 +120,10 @@ include_directories(
 #   ${catkin_LIBRARIES}
 # )
 
-add_executable(stairwaydetector
-	src/stairwaydetection.cpp
+add_executable(stairsdetection
+	src/stairsdetection.cpp
 )
-target_link_libraries(stairwaydetection ${catkin_LIBRARIES} yaml-cpp)
+target_link_libraries(stairsdetection ${catkin_LIBRARIES} yaml-cpp)
 
 find_package(catkin REQUIRED
 	COMPONENTS roslaunch

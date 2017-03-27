@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package>
-  <name>hmmwv_detection</name>
+  <name>hmmwv_stairsdetection</name>
   <version>0.1.0</version>
-  <description>Hmmwvs your life!</description>
+  <description>HMMWVs your life!</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag --> 
   <!-- Example:  -->
