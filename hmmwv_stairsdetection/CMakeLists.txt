@@ -5,13 +5,13 @@ project(hmmwv_stairsdetection)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
-  roscpp
-  std_msgs
-  geometry_msgs
-  tf
-  message_generation
-  pcl_conversions
-  pcl_ros
+	roscpp
+	std_msgs
+	geometry_msgs
+	tf
+	message_generation
+	pcl_conversions
+	pcl_ros
 )
 
 ## System dependencies are found with CMake's conventions
@@ -70,8 +70,8 @@ add_service_files(
 
 ## Generate added messages and services with any dependencies listed here
 generate_messages(
-  DEPENDENCIES
-  std_msgs
+	DEPENDENCIES
+	std_msgs
 #  geometry_msgs
 )
 
@@ -87,7 +87,7 @@ generate_messages(
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES hmmwv
-  CATKIN_DEPENDS roscpp geometry_msgs
+	CATKIN_DEPENDS roscpp geometry_msgs
 #  CATKIN_DEPENDS message_runtime
 #  DEPENDS system_lib
 )
@@ -100,7 +100,7 @@ catkin_package(
 ## Your package locations should be listed before other locations
 # include_directories(include)
 include_directories(
-   include ${catkin_INCLUDE_DIRS}
+	 include ${catkin_INCLUDE_DIRS}
 )
 
 ## Declare a cpp library

@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <launch>
 
-	<node name="stairsdetection" pkg="hmmwv" type="stairsdetection" output="screen">
+	<node name="stairsdetection" pkg="hmmwv_stairsdetection" type="stairsdetection" output="screen">
 		<param name="input" value="/camera/depth/points" />
 		<param name="steps" value="/hmmwv/steps" />
 		<param name="stairs" value="/hmmwv/stairs" />
@@ -9,14 +9,15 @@
 		<param name="world_frame" value="base_link" />
 		<param name="namespace" value="hmmwv" />
 		<param name="publish_steps" value="true" />
-		<param name="publish_stairway" value="false" />
+		<param name="publish_stairway" value="true" />
 		<param name="use_sample_data" value="false" />
 
 		<param name="camera_height_above_ground" value="0.29" />
 		<param name="segmentation_iterations" value="1000" />
 		<param name="segmentation_threshold" value="0.01" />
-		<param name="min_step_height" value="0.12" />
-		<param name="max_step_height" value="0.25" />
+		<param name="max_step_width" value="1.5" />
+		<param name="min_step_height" value="0.05" />
+		<param name="max_step_height" value="1.0" />
 	</node>
 
 </launch>

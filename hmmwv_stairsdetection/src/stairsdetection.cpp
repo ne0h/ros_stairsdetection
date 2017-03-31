@@ -27,6 +27,8 @@
 #include <hmmwv_stairsdetection/ImportStairs.h>
 #include <hmmwv_stairsdetection/ClearStairs.h>
 
+#include "plane.hpp"
+
 using namespace std;
 
 // forward declarations
@@ -48,6 +50,7 @@ float cameraHeightAboveGroundSetting;
 int   segmentationIterationSetting;
 float segmentationThresholdSetting;
 
+float maxStepWidthSetting;
 float minStepHeightSetting;
 float maxStepHeightSetting;
 
@@ -55,36 +58,31 @@ string cameraSetting;
 string worldFrameSetting;
 string namespaceSetting;
 
-struct Plane {
-	pcl::PointXYZ min;
-	pcl::PointXYZ max;
-};
-
 struct Stairs {
-	vector<struct Plane> steps;
+	vector<Plane> steps;
 };
 
-vector<struct Stairs> stairs_list;
+vector<struct Stairs> global_stairs;
 
 void printROSPoint(geometry_msgs::Point *p) {
 	ROS_INFO("Point: %f %f %f", p->x, p->y, p->z);
 }
 
-void printPlane(struct Plane *plane) {
-	ROS_INFO("AABB: %f %f %f -> %f %f %f", plane->min.x, plane->min.y, plane->min.z, plane->max.x, plane->max.z,
-		plane->max.z);
+void printPlane(Plane *plane) {
+	ROS_INFO("AABB: %f %f %f -> %f %f %f", 	plane->getMin().x, plane->getMin().y, plane->getMin().z,
+											plane->getMax().x, plane->getMax().y, plane->getMax().z);
 }
 
 void printStairs(struct Stairs *stairs) {
-	for (vector<struct Plane>::iterator it = stairs->steps.begin(); it != stairs->steps.end(); it++) {
-		ROS_INFO("Min: %f | %f | %f", (*it).min.x, (*it).min.y, (*it).min.z);
-		ROS_INFO("Max: %f | %f | %f", (*it).max.x, (*it).max.y, (*it).max.z);
+	for (vector<Plane>::iterator it = stairs->steps.begin(); it != stairs->steps.end(); it++) {
+		ROS_INFO("Min: %f | %f | %f", (*it).getMin().x, (*it).getMin().y, (*it).getMin().z);
+		ROS_INFO("Max: %f | %f | %f", (*it).getMax().x, (*it).getMax().y, (*it).getMax().z);
 		ROS_INFO("----------------");
 	}
 }
 
 void printAllStairs() {
-	for (vector<struct Stairs>::iterator it = stairs_list.begin(); it != stairs_list.end(); it++) {
+	for (vector<struct Stairs>::iterator it = global_stairs.begin(); it != global_stairs.end(); it++) {
 		ROS_INFO("################################");
 		printStairs(&(*it));
 	}
@@ -95,11 +93,15 @@ void printPoint(pcl::PointXYZ *p) {
 	ROS_INFO("Point: %f %f %f", p->x, p->y, p->z);
 }
 
-void getAABB(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, struct Plane *plane) {
+void getAABB(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, Plane *plane) {
 	pcl::MomentOfInertiaEstimation<pcl::PointXYZ> feature_extractor;
 	feature_extractor.setInputCloud(cloud);
 	feature_extractor.compute();
-	feature_extractor.getAABB(plane->min, plane->max);
+	feature_extractor.getAABB(plane->getMin(), plane->getMax());
+}
+
+void calculateCenterTopOfPlane(Plane *plane) {
+
 }
 
 /**
@@ -133,7 +135,7 @@ bool transformToWorldCoordinates(geometry_msgs::Point *p) {
 	try {
 		ts = tfBuffer.lookupTransform(cameraSetting.c_str(), worldFrameSetting.c_str(), ros::Time(0));
 	} catch (tf2::TransformException &ex) {
-		ROS_WARN("Failed to transform to world coordinates. World frame id is %s", worldFrameSetting.c_str());
+		ROS_WARN("Failed to transform to world coordinates. World frame id is '%s'", worldFrameSetting.c_str());
 		ROS_WARN("%s", ex.what());
 		return false;
 	}
@@ -182,14 +184,14 @@ bool transformToWorldCoordinates(pcl::PointXYZ *p) {
  *  p1-----------------p4
  *
  */
-void buildStepFromAABB(struct Plane *plane, vector<pcl::PointXYZ> *points) {
-	points->push_back(plane->min);
-	points->push_back(pcl::PointXYZ(plane->min.x, plane->max.y, plane->min.z));
-	points->push_back(plane->max);
-	points->push_back(pcl::PointXYZ(plane->max.x, plane->min.y, plane->max.z));
+void buildStepFromAABB(Plane *plane, vector<pcl::PointXYZ> *points) {
+	points->push_back(plane->getMin());
+	points->push_back(pcl::PointXYZ(plane->getMin().x, plane->getMax().y, plane->getMin().z));
+	points->push_back(plane->getMax());
+	points->push_back(pcl::PointXYZ(plane->getMax().x, plane->getMin().y, plane->getMax().z));
 }
 
-void buildRosMarkerSteps(visualization_msgs::Marker *marker, vector<struct Plane> *planes, float *color) {
+void buildRosMarkerSteps(visualization_msgs::Marker *marker, vector<Plane> *planes, float *color) {
 	marker->header.frame_id = cameraSetting.c_str();
 	marker->header.stamp = ros::Time::now();
 	marker->ns = namespaceSetting.c_str();
@@ -205,7 +207,7 @@ void buildRosMarkerSteps(visualization_msgs::Marker *marker, vector<struct Plane
 	marker->color.b = color[2];
 	marker->color.a = 1.0;
 
-	for (vector<struct Plane>::iterator it = planes->begin(); it != planes->end(); it++) {
+	for (vector<Plane>::iterator it = planes->begin(); it != planes->end(); it++) {
 
 		vector<pcl::PointXYZ> points;
 		buildStepFromAABB(&(*it), &points);
@@ -231,10 +233,10 @@ void buildRosMarkerSteps(visualization_msgs::Marker *marker, vector<struct Plane
 		marker->points.push_back(p4);
 		marker->points.push_back(p1);
 
-		const float width  = fabs((*it).max.x - (*it).min.x);
-		const float height = fabs((*it).max.y - (*it).min.y);
+		const float width  = fabs((*it).getMax().x - (*it).getMin().x);
+		const float height = fabs((*it).getMax().y - (*it).getMin().y);
 		ROS_INFO("Width: %f | Height: %f | Height above zero: %f", width, height,
-			(*it).min.y + cameraHeightAboveGroundSetting);
+			(*it).getMin().y + cameraHeightAboveGroundSetting);
 	}
 }
 
@@ -289,12 +291,12 @@ void buildROSMarkerStairs(visualization_msgs::Marker *marker, struct Stairs *sta
 /**
  * Shows stairs in RVIZ
  */
-void showStairssInRVIZ() {
+void showStairsInRVIZ() {
 
 	if (publishStairsSetting) {
 		visualization_msgs::MarkerArray markerArray;
 
-		for (vector<struct Stairs>::iterator it = stairs_list.begin(); it != stairs_list.end(); it++) {
+		for (vector<struct Stairs>::iterator it = global_stairs.begin(); it != global_stairs.end(); it++) {
 			visualization_msgs::Marker marker;
 			float color[3];
 			color[0] = color[2] = 0.f;
@@ -333,7 +335,7 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &input) {
 	pcl::PointIndices::Ptr inliers(new pcl::PointIndices);
 
 	pcl::SACSegmentation<pcl::PointXYZ> seg;
-	seg.setOptimizeCoefficients(true);
+	//seg.setOptimizeCoefficients(true);
 
 	seg.setModelType(pcl::SACMODEL_PLANE);
 	seg.setMethodType(pcl::SAC_RANSAC);
@@ -348,7 +350,7 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &input) {
 	vector<struct Plane> planes;
 
 	// Extract a model and repeat while 0.5% of the original cloud is still present
-	while (cloud->points.size() > 0.005 * pointsAtStart) {
+	while (cloud->points.size() > 0.1 * pointsAtStart) {
 		id++;
 
 		seg.setInputCloud(cloud);
@@ -370,22 +372,15 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &input) {
 		cloud.swap(cloud2);
 
 		// calculate AABB and add to planes list
-		struct Plane plane;
+		Plane plane;
 		getAABB(cloud1, &plane);
+		calculateCenterTopOfPlane(&plane);
 
-		const float width  = fabs(plane.max.x - plane.min.x);
-		const float height = fabs(plane.max.y - plane.min.y);
-		//ROS_INFO("Width: %f | Height: %f", width, height);
+		const float width  = fabs(plane.getMax().x - plane.getMin().x);
+		const float height = fabs(plane.getMax().y - plane.getMin().y);
 
-		// Remove planes with less than 5cm or more than 40cm and remove rectangles with  a width of less than 40cm
-		if (height > maxStepHeightSetting || height < minStepHeightSetting || width < 0.4f) {
-			continue;
-		}
-
-		// Remove rectangle that are not (more or less) orthogonal to the robot
-		const float depthDiff = fabs(plane.max.z - plane.min.z);
-		const float depthThreshold = 0.2f;
-		if (depthDiff > depthThreshold) {
+		// Remove planes with less than 5cm or more than 40cm and remove rectangles with  a width of less than 30cm
+		if (height > maxStepHeightSetting || height < minStepHeightSetting || width > maxStepWidthSetting) {
 			continue;
 		}
 
@@ -407,28 +402,52 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &input) {
 	}
 
 	/*
-	 * Try to build a stairs
+	 * Try to build (different) stairs
 	 */
 
 	ROS_INFO("-----------------------------------------------------------------");
 
-	// search for starting step
+	vector<struct Stairs> located_stairs;
+
+	// Look for starting steps. If any starting step a new stairs is started
+	vector<int> planeIdsToRemove;
+	unsigned int cur_id = 0;
+	for (vector<struct Plane>::iterator it = planes.begin(); it != planes.end(); it++) {
+		if ((*it).getMin().y + cameraHeightAboveGroundSetting < 0.05) {
+			ROS_INFO("Found starting step");
+
+			struct Stairs s;
+			s.steps.push_back((*it));
+			located_stairs.push_back(s);
+
+			planeIdsToRemove.push_back(cur_id);
+		}
+		cur_id++;
+	}
+
+	// Remove all starting steps from planes list
+	for (vector<int>::iterator it = planeIdsToRemove.begin(); it != planeIdsToRemove.end(); it++) {
+		ROS_INFO("!!!! %d", *it);
+		//planes.erase(planes.begin() + planeIdsToRemove.at(it));
+	}
+
+	/*
+	// search for starting steps
 	struct Stairs stairs;
-	vector<int> removeElements;
-	unsigned int i = 0;
+	unsigned int remove = 0;
 	for (vector<struct Plane>::iterator it = planes.begin(); it != planes.end(); it++) {
 		if ((*it).min.y + cameraHeightAboveGroundSetting < 0.05) {
 			stairs.steps.push_back((*it));
-			removeElements.push_back(i);
 		}
 
-		i++;
-	}
-	for (unsigned int i = 0; i < removeElements.size(); i++) {
-		planes.erase(planes.begin() + removeElements.at(i));
+		remove++;
 	}
 
-	// search for more steps
+	// Delete located starting step from list of planes
+	planes.erase(planes.begin() + remove);
+	ROS_INFO("Found starting step");
+
+	// look for more steps
 	if (stairs.steps.size() > 0) {
 		bool somethingChanged = false;
 		unsigned int stepCounter = 0;
@@ -467,27 +486,28 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &input) {
 
 	// check if this stairs is already known
 	if (!stairsAlreadyKnown(&stairs) && stairs.steps.size() > 0) {
-		stairs_list.push_back(stairs);
-		showStairssInRVIZ();
-	}
+		ROS_INFO("New stairs pubslished");
+		global_stairs.push_back(stairs);
+		showStairsInRVIZ();
+	}*/
 }
 
 void transformStairsToWorldCoordinates(struct Stairs *stairs) {
-	for (vector<struct Plane>::iterator it = stairs->steps.begin(); it != stairs->steps.end(); it++) {
-		transformToWorldCoordinates(&(*it).min);
-		transformToWorldCoordinates(&(*it).max);
+	for (vector<Plane>::iterator it = stairs->steps.begin(); it != stairs->steps.end(); it++) {
+		transformToWorldCoordinates(&(*it).getMin());
+		transformToWorldCoordinates(&(*it).getMax());
 	}
 }
 
 bool stairsAlreadyKnown(struct Stairs *stairs) {
-	for (vector<struct Stairs>::iterator it = stairs_list.begin(); it != stairs_list.end(); it++) {
+	for (vector<struct Stairs>::iterator it = global_stairs.begin(); it != global_stairs.end(); it++) {
 		const float tolerance = 0.1f;
-		if (	   fabs((*it).steps.at(0).min.x - stairs->steps.at(0).min.x) > tolerance
-				&& fabs((*it).steps.at(0).min.y - stairs->steps.at(0).min.y) > tolerance
-				&& fabs((*it).steps.at(0).min.z - stairs->steps.at(0).min.z) > tolerance
-				&& fabs((*it).steps.at(0).max.x - stairs->steps.at(0).max.x) > tolerance
-				&& fabs((*it).steps.at(0).max.y - stairs->steps.at(0).max.y) > tolerance
-				&& fabs((*it).steps.at(0).max.z - stairs->steps.at(0).max.z) > tolerance) {
+		if (	   fabs((*it).steps.at(0).getMin().x - stairs->steps.at(0).getMin().x) > tolerance
+				&& fabs((*it).steps.at(0).getMin().y - stairs->steps.at(0).getMin().y) > tolerance
+				&& fabs((*it).steps.at(0).getMin().z - stairs->steps.at(0).getMin().z) > tolerance
+				&& fabs((*it).steps.at(0).getMax().x - stairs->steps.at(0).getMax().x) > tolerance
+				&& fabs((*it).steps.at(0).getMax().y - stairs->steps.at(0).getMax().y) > tolerance
+				&& fabs((*it).steps.at(0).getMax().z - stairs->steps.at(0).getMax().z) > tolerance) {
 			return true;
 		}
 	}
@@ -495,13 +515,12 @@ bool stairsAlreadyKnown(struct Stairs *stairs) {
 	return false;
 }
 
-bool exportStairs(hmmwv_stairsdetection::ExportStairs::Request &req,
-		hmmwv_stairsdetection::ExportStairs::Response &res) {
+bool exportStairs(hmmwv_stairsdetection::ExportStairs::Request &req, hmmwv_stairsdetection::ExportStairs::Response &res) {
 
 	YAML::Node stairsNode;
 
 	// traverse located stairs
-	for (vector<struct Stairs>::iterator it = stairs_list.begin(); it != stairs_list.end(); it++) {
+	for (vector<struct Stairs>::iterator it = global_stairs.begin(); it != global_stairs.end(); it++) {
 		YAML::Node stairsNode;
 
 		// iterate steps
@@ -547,11 +566,10 @@ bool exportStairs(hmmwv_stairsdetection::ExportStairs::Request &req,
 	return true;
 }
 
-bool importStairs(hmmwv_stairsdetection::ImportStairs::Request &req,
-		hmmwv_stairsdetection::ImportStairs::Response &res) {
+bool importStairs(hmmwv_stairsdetection::ImportStairs::Request &req, hmmwv_stairsdetection::ImportStairs::Response &res) {
 
 	// clear current data
-	stairs_list.clear();
+	global_stairs.clear();
 
 	// iterate stairs
 	YAML::Node root = YAML::LoadFile(req.path);
@@ -560,8 +578,6 @@ bool importStairs(hmmwv_stairsdetection::ImportStairs::Request &req,
 
 		// iterate steps
 		for (unsigned int i = 0; i < (*it).size(); i++) {
-			struct Plane step;
-
 			ostringstream convert;
 			convert << "s" << i;
 
@@ -572,7 +588,6 @@ bool importStairs(hmmwv_stairsdetection::ImportStairs::Request &req,
 			//transformToBaseLinkCoordinates(&p1ROS);
 			pcl::PointXYZ p1PCL;
 			transformROSPointToPCLPoint(&p1ROS, &p1PCL);
-			step.min = p1PCL;
 
 			geometry_msgs::Point p3ROS;
 			p3ROS.x = (*it)[convert.str()]["p3"]["x"].as<double>();
@@ -581,22 +596,22 @@ bool importStairs(hmmwv_stairsdetection::ImportStairs::Request &req,
 			//transformToBaseLinkCoordinates(&p3ROS);
 			pcl::PointXYZ p3PCL;
 			transformROSPointToPCLPoint(&p3ROS, &p3PCL);
-			step.max = p3PCL;
 
+			Plane step(p1PCL, p3PCL);
 			stairs.steps.push_back(step);
 		}
 
-		stairs_list.push_back(stairs);
+		global_stairs.push_back(stairs);
 	}
 
-	showStairssInRVIZ();
+	showStairsInRVIZ();
 	res.result = "Seems like the import has worked.";
 	return true;
 }
 
 bool clearStairs(hmmwv_stairsdetection::ClearStairs::Request &req, hmmwv_stairsdetection::ClearStairs::Response &res) {
-	stairs_list.clear();
-	showStairssInRVIZ();
+	global_stairs.clear();
+	showStairsInRVIZ();
 	return true;
 }
 
@@ -624,6 +639,7 @@ int main(int argc, char **argv) {
 	ros::param::get("~segmentation_iterations", segmentationIterationSetting);
 	ros::param::get("~segmentation_threshold", segmentationThresholdSetting);
 
+	ros::param::get("~max_step_width", maxStepWidthSetting);
 	ros::param::get("~min_step_height", minStepHeightSetting);
 	ros::param::get("~max_step_height", maxStepHeightSetting);
 
@@ -636,7 +652,7 @@ int main(int argc, char **argv) {
 	/*
 	 * Init data structure
 	 */
-	stairs_list.clear();
+	global_stairs.clear();
 
 	/*
 	 * Init subscriber and listener
@@ -656,21 +672,15 @@ int main(int argc, char **argv) {
 	if (useSampleDataSetting) {
 		for (unsigned int i = 0; i < 3; i++) {
 			Stairs s;
-			Plane p1;
-			p1.min = pcl::PointXYZ(1*i, 2*i, 3*i);
-			p1.max = pcl::PointXYZ(1.5*i, 2.5*i, 3.5*i);
-			Plane p2;
-			p2.min = pcl::PointXYZ(1.1*i, 2.1*i, 3.1*i);
-			p2.max = pcl::PointXYZ(1.4*i, 2.4*i, 3.4*i);
-			Plane p3;
-			p3.min = pcl::PointXYZ(1.2*i, 2.2*i, 3.2*i);
-			p3.max = pcl::PointXYZ(1.3*i, 2.3*i, 3.3*i);
+			Plane p1(pcl::PointXYZ(1*i, 2*i, 3*i), pcl::PointXYZ(1.5*i, 2.5*i, 3.5*i));
+			Plane p2(pcl::PointXYZ(1.1*i, 2.1*i, 3.1*i), pcl::PointXYZ(1.4*i, 2.4*i, 3.4*i));
+			Plane p3(pcl::PointXYZ(1.2*i, 2.2*i, 3.2*i), pcl::PointXYZ(1.3*i, 2.3*i, 3.3*i));
 
 			s.steps.push_back(p1);
 			s.steps.push_back(p2);
 			s.steps.push_back(p3);
 
-			stairs_list.push_back(s);
+			global_stairs.push_back(s);
 		}
 	}
 
