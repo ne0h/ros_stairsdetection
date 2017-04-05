@@ -37,8 +37,20 @@ public:
 
 	~ROSContext();
 
-	void init(int argc, char **argv, void (*callback), void (*exportStairs), void (*importStairs),
-		void (*clearStairs));
+	void init(int argc, char **argv, void (*callback), bool (*exportStairs), bool (*importStairs),
+		bool (*clearStairs));
+
+	bool getPublishStepsSetting() {
+		return m_publishStepsSetting;
+	}
+
+	bool getPublishStairsSetting() {
+		return m_publishStairsSetting;
+	}
+
+	float getCameraHeightAboveGroundSetting() {
+		return m_cameraHeightAboveGroundSetting;
+	}
 
 	float getMaxStepWidthSetting() {
 		return m_maxStepWidthSetting;

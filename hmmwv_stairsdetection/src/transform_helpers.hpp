@@ -41,4 +41,6 @@ void transformROSPointToPCLPoint(geometry_msgs::Point *input, pcl::PointXYZ *out
 
 bool transformToBaseLinkCoordinates(geometry_msgs::Point *p, std::string cameraSetting, std::string worldFrameSetting);
 
+void buildStepFromAABB(Plane *plane, std::vector<pcl::PointXYZ> *points);
+
 #endif

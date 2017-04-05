@@ -85,3 +85,10 @@ bool transformToBaseLinkCoordinates(geometry_msgs::Point *p, std::string cameraS
 
 	return true;
 }
+
+void buildStepFromAABB(Plane *plane, std::vector<pcl::PointXYZ> *points) {
+	points->push_back(plane->getMin());
+	points->push_back(pcl::PointXYZ(plane->getMin().x, plane->getMax().y, plane->getMin().z));
+	points->push_back(plane->getMax());
+	points->push_back(pcl::PointXYZ(plane->getMax().x, plane->getMin().y, plane->getMax().z));
+}

@@ -28,13 +28,6 @@ using namespace std;
 vector<struct Stairs> global_stairs;
 ROSContext rc;
 
-void buildStepFromAABB(Plane *plane, std::vector<pcl::PointXYZ> *points) {
-	points->push_back(plane->getMin());
-	points->push_back(pcl::PointXYZ(plane->getMin().x, plane->getMax().y, plane->getMin().z));
-	points->push_back(plane->getMax());
-	points->push_back(pcl::PointXYZ(plane->getMax().x, plane->getMin().y, plane->getMax().z));
-}
-
 void calculateCenterTopOfPlane(Plane *plane) {
 
 }
@@ -123,7 +116,7 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &input) {
 		ROS_INFO("-----------------------------------------------------------------");
 		ROS_INFO("Publishing %d step(s):", (int) planes.size());
 
-		rc.publishSteps(planes);
+		rc.publishSteps(&planes);
 	}
 
 	/*
@@ -138,7 +131,7 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &input) {
 	vector<int> planeIdsToRemove;
 	unsigned int cur_id = 0;
 	for (vector<struct Plane>::iterator it = planes.begin(); it != planes.end(); it++) {
-		if ((*it).getMin().y + cameraHeightAboveGroundSetting < 0.05) {
+		if ((*it).getMin().y + m_cameraHeightAboveGroundSetting < 0.05) {
 			ROS_INFO("Found starting step");
 
 			struct Stairs s;
@@ -161,7 +154,7 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &input) {
 	struct Stairs stairs;
 	unsigned int remove = 0;
 	for (vector<struct Plane>::iterator it = planes.begin(); it != planes.end(); it++) {
-		if ((*it).min.y + cameraHeightAboveGroundSetting < 0.05) {
+		if ((*it).min.y + m_cameraHeightAboveGroundSetting < 0.05) {
 			stairs.steps.push_back((*it));
 		}
 
@@ -324,14 +317,14 @@ bool importStairs(hmmwv_stairsdetection::ImportStairs::Request &req,
 		global_stairs.push_back(stairs);
 	}
 
-	showStairsInRVIZ(&global_stairs);
+	rc.showStairsInRVIZ(&global_stairs);
 	res.result = "Seems like the import has worked.";
 	return true;
 }
 
 bool clearStairs(hmmwv_stairsdetection::ClearStairs::Request &req, hmmwv_stairsdetection::ClearStairs::Response &res) {
 	global_stairs.clear();
-	showStairsInRVIZ(&global_stairs);
+	rc.showStairsInRVIZ(&global_stairs);
 	return true;
 }
 

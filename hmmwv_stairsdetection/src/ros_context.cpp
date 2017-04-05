@@ -15,8 +15,8 @@ ROSContext::~ROSContext() {
 
 }
 
-void ROSContext::init(int argc, char **argv, void (*callback), void (*exportStairs), void (*importStairs),
-		void (*clearStairs)) {
+void ROSContext::init(int argc, char **argv, bool (*callback), bool (*exportStairs), bool (*importStairs),
+		bool (*clearStairs)) {
 
 	/*
 	 * load parameters from launch file
@@ -85,9 +85,9 @@ void ROSContext::init(int argc, char **argv, void (*callback), void (*exportStai
 
 void ROSContext::buildRosMarkerSteps(visualization_msgs::Marker *marker, std::vector<Plane> *planes, float *color) {
 
-	marker->header.frame_id = cameraSetting.c_str();
+	marker->header.frame_id = m_cameraSetting.c_str();
 	marker->header.stamp = ros::Time::now();
-	marker->ns = namespaceSetting.c_str();
+	marker->ns = m_namespaceSetting.c_str();
 	marker->id = 0;
 	marker->lifetime = ros::Duration();
 
@@ -129,7 +129,7 @@ void ROSContext::buildRosMarkerSteps(visualization_msgs::Marker *marker, std::ve
 		const float width  = fabs((*it).getMax().x - (*it).getMin().x);
 		const float height = fabs((*it).getMax().y - (*it).getMin().y);
 		ROS_INFO("Width: %f | Height: %f | Height above zero: %f", width, height,
-			(*it).getMin().y + cameraHeightAboveGroundSetting);
+			(*it).getMin().y + m_cameraHeightAboveGroundSetting);
 	}
 }
 
@@ -173,7 +173,7 @@ void ROSContext::buildROSMarkerStairs(visualization_msgs::Marker *marker, struct
 			 *
 			 */
 
-			/*marker->points.push_back(pc1);
+			marker->points.push_back(pc1);
 			marker->points.push_back(pb2);
 			marker->points.push_back(pc4);
 			marker->points.push_back(pb3);
@@ -186,7 +186,7 @@ void ROSContext::buildROSMarkerStairs(visualization_msgs::Marker *marker, struct
  */
 void ROSContext::showStairsInRVIZ(std::vector<struct Stairs> *stairs) {
 
-	if (publishStairsSetting) {
+	if (m_publishStairsSetting) {
 		visualization_msgs::MarkerArray markerArray;
 
 		for (std::vector<struct Stairs>::iterator it = stairs->begin(); it != stairs->end(); it++) {
@@ -198,7 +198,7 @@ void ROSContext::showStairsInRVIZ(std::vector<struct Stairs> *stairs) {
 			markerArray.markers.push_back(marker);
 		}
 
-		pubStairs.publish(markerArray);
+		m_pubStairs.publish(markerArray);
 	}
 }
 
