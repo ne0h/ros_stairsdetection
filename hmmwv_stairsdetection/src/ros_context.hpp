@@ -37,8 +37,10 @@ public:
 
 	~ROSContext();
 
-	void init(int argc, char **argv, void (*callback), bool (*exportStairs), bool (*importStairs),
-		bool (*clearStairs));
+	template<class MReq, class MRes>
+	void init(int argc, char **argv, void (*callback), bool (*exportStairs)(MReq&, MRes&),
+		bool (*importStairs)(MReq&, MRes&),	bool (*clearStairs)(MReq&, MRes&),
+		std::vector<struct Stairs> *global_stairs);
 
 	bool getPublishStepsSetting() {
 		return m_publishStepsSetting;

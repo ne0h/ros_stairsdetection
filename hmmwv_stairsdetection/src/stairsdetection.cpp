@@ -131,7 +131,7 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &input) {
 	vector<int> planeIdsToRemove;
 	unsigned int cur_id = 0;
 	for (vector<struct Plane>::iterator it = planes.begin(); it != planes.end(); it++) {
-		if ((*it).getMin().y + m_cameraHeightAboveGroundSetting < 0.05) {
+		if ((*it).getMin().y + rc.getCameraHeightAboveGroundSetting() < 0.05) {
 			ROS_INFO("Found starting step");
 
 			struct Stairs s;

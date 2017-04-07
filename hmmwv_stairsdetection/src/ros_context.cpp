@@ -15,8 +15,10 @@ ROSContext::~ROSContext() {
 
 }
 
-void ROSContext::init(int argc, char **argv, bool (*callback), bool (*exportStairs), bool (*importStairs),
-		bool (*clearStairs)) {
+template<class MReq, class MRes>
+void ROSContext::init(int argc, char **argv, void (*callback), bool (*exportStairs)(MReq&, MRes&),
+		bool (*importStairs)(MReq&, MRes&),	bool (*clearStairs)(MReq&, MRes&),
+		std::vector<struct Stairs> *global_stairs) {
 
 	/*
 	 * load parameters from launch file
@@ -76,7 +78,7 @@ void ROSContext::init(int argc, char **argv, bool (*callback), bool (*exportStai
 			s.steps.push_back(p2);
 			s.steps.push_back(p3);
 
-			global_stairs.push_back(s);
+			global_stairs->push_back(s);
 		}
 	}
 
@@ -209,7 +211,7 @@ void ROSContext::publishSteps(std::vector<Plane> *planes) {
 	color[0] = color[1] = 0.f;
 	color[2] = 1.f;
 
-	buildRosMarkerSteps(&marker, &planes, color);
+	buildRosMarkerSteps(&marker, planes, color);
 	markerArray.markers.push_back(marker);
 	m_pubSteps.publish(markerArray);
 }
