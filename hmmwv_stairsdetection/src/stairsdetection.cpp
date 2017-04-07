@@ -330,7 +330,7 @@ bool clearStairs(hmmwv_stairsdetection::ClearStairs::Request &req, hmmwv_stairsd
 
 int main(int argc, char **argv) {
 
-	rc.init(argc, argv, &callback, &exportStairs, &importStairs, &clearStairs);
+	rc.init(argc, argv, &callback, &exportStairs, &importStairs, &clearStairs, &global_stairs);
 
 	return 0;
 }

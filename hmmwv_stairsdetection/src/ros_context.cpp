@@ -14,19 +14,10 @@ ROSContext::~ROSContext() {
 
 }
 
-//template<class MReq, class MRes>
-void ROSContext::init(int argc, char **argv,
-		void (*callback)(
-				sensor_msgs::PointCloud2),
-		bool (*exportStairs)(
-				hmmwv_stairsdetection::ExportStairs::Request req,
-				hmmwv_stairsdetection::ExportStairs::Response res),
-		bool (*importStairs)(
-				hmmwv_stairsdetection::ImportStairs::Request req,
-				hmmwv_stairsdetection::ImportStairs::Response res),
-		bool (*clearStairs)(
-				hmmwv_stairsdetection::ClearStairs::Request req,
-				hmmwv_stairsdetection::ClearStairs::Response res),
+void ROSContext::init(int argc, char **argv, void (*callback)(const sensor_msgs::PointCloud2ConstPtr&),
+		bool (*exportStairs)(hmmwv_stairsdetection::ExportStairs::Request&, hmmwv_stairsdetection::ExportStairs::Response&),
+		bool (*importStairs)(hmmwv_stairsdetection::ImportStairs::Request&, hmmwv_stairsdetection::ImportStairs::Response&),
+		bool (*clearStairs)(hmmwv_stairsdetection::ClearStairs::Request&, hmmwv_stairsdetection::ClearStairs::Response&),
 		std::vector<struct Stairs> *global_stairs) {
 
 	/*
