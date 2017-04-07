@@ -5,6 +5,7 @@
 #include <string>
 
 #include <ros/ros.h>
+#include <sensor_msgs/PointCloud2.h>
 #include <visualization_msgs/MarkerArray.h>
 
 #include <hmmwv_stairsdetection/ExportStairs.h>
@@ -37,9 +38,19 @@ public:
 
 	~ROSContext();
 
-	template<class MReq, class MRes>
-	void init(int argc, char **argv, void (*callback), bool (*exportStairs)(MReq&, MRes&),
-		bool (*importStairs)(MReq&, MRes&),	bool (*clearStairs)(MReq&, MRes&),
+	//template<class MReq, class MRes>
+	void init(int argc, char **argv,
+		void (*callback)(
+				sensor_msgs::PointCloud2),
+		bool (*exportStairs)(
+				hmmwv_stairsdetection::ExportStairs::Request req,
+				hmmwv_stairsdetection::ExportStairs::Response res),
+		bool (*importStairs)(
+				hmmwv_stairsdetection::ImportStairs::Request req,
+				hmmwv_stairsdetection::ImportStairs::Response res),
+		bool (*clearStairs)(
+				hmmwv_stairsdetection::ClearStairs::Request req,
+				hmmwv_stairsdetection::ClearStairs::Response res),
 		std::vector<struct Stairs> *global_stairs);
 
 	bool getPublishStepsSetting() {

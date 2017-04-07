@@ -1,6 +1,5 @@
 #include "ros_context.hpp"
 
-#include <sensor_msgs/PointCloud2.h>
 #include <geometry_msgs/PolygonStamped.h>
 #include <geometry_msgs/Point32.h>
 #include <geometry_msgs/TransformStamped.h>
@@ -15,9 +14,19 @@ ROSContext::~ROSContext() {
 
 }
 
-template<class MReq, class MRes>
-void ROSContext::init(int argc, char **argv, void (*callback), bool (*exportStairs)(MReq&, MRes&),
-		bool (*importStairs)(MReq&, MRes&),	bool (*clearStairs)(MReq&, MRes&),
+//template<class MReq, class MRes>
+void ROSContext::init(int argc, char **argv,
+		void (*callback)(
+				sensor_msgs::PointCloud2),
+		bool (*exportStairs)(
+				hmmwv_stairsdetection::ExportStairs::Request req,
+				hmmwv_stairsdetection::ExportStairs::Response res),
+		bool (*importStairs)(
+				hmmwv_stairsdetection::ImportStairs::Request req,
+				hmmwv_stairsdetection::ImportStairs::Response res),
+		bool (*clearStairs)(
+				hmmwv_stairsdetection::ClearStairs::Request req,
+				hmmwv_stairsdetection::ClearStairs::Response res),
 		std::vector<struct Stairs> *global_stairs) {
 
 	/*
