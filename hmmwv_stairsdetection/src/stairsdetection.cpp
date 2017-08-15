@@ -25,12 +25,10 @@
 
 using namespace std;
 
+bool stairsAlreadyKnown(struct Stairs *stairs);
+
 vector<struct Stairs> global_stairs;
 ROSContext rc;
-
-void calculateCenterTopOfPlane(Plane *plane) {
-
-}
 
 void callback(const sensor_msgs::PointCloud2ConstPtr &input) {
 	ROS_INFO("=================================================================");
@@ -97,7 +95,7 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &input) {
 		// calculate AABB and add to planes list
 		Plane plane;
 		getAABB(cloud1, &plane);
-		calculateCenterTopOfPlane(&plane);
+		plane.calculateCenterTop();
 
 		const float width  = fabs(plane.getMax().x - plane.getMin().x);
 		const float height = fabs(plane.getMax().y - plane.getMin().y);
@@ -120,33 +118,33 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &input) {
 	}
 
 	/*
-	 * Try to build (different) stairs
+	 * Try to build (multiple) stairs out of the steps
 	 */
 
 	ROS_INFO("-----------------------------------------------------------------");
-
+	
 	vector<struct Stairs> located_stairs;
 
-	// Look for starting steps. If any starting step a new stairs is started
-	vector<int> planeIdsToRemove;
-	unsigned int cur_id = 0;
-	for (vector<struct Plane>::iterator it = planes.begin(); it != planes.end(); it++) {
+	// Look for starting steps.
+	// Every new starting step starts new stairs -> all starting steps are erased from steps list
+	vector<struct Plane> stepsToRemove;
+	for (vector<struct Plane>::iterator it = planes.begin(); it != planes.end();) {
 		if ((*it).getMin().y + rc.getCameraHeightAboveGroundSetting() < 0.05) {
-			ROS_INFO("Found starting step");
+			ROS_INFO("Found starting step: creating new stairs...");
 
+			// Create stairs and add step to the newly created stairs
 			struct Stairs s;
 			s.steps.push_back((*it));
 			located_stairs.push_back(s);
 
-			planeIdsToRemove.push_back(cur_id);
-		}
-		cur_id++;
-	}
+			stepsToRemove.push_back((*it));
+			ROS_INFO("Mark step '%s' to be removed.", (*it).toString().c_str());
 
-	// Remove all starting steps from planes list
-	for (vector<int>::iterator it = planeIdsToRemove.begin(); it != planeIdsToRemove.end(); it++) {
-		ROS_INFO("!!!! %d", *it);
-		//planes.erase(planes.begin() + planeIdsToRemove.at(it));
+			// Remove from steps list
+			it = planes.erase(it);
+		} else {
+			++it;
+		}
 	}
 
 	/*
@@ -154,7 +152,7 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &input) {
 	struct Stairs stairs;
 	unsigned int remove = 0;
 	for (vector<struct Plane>::iterator it = planes.begin(); it != planes.end(); it++) {
-		if ((*it).min.y + m_cameraHeightAboveGroundSetting < 0.05) {
+		if ((*it).getMin().y + rc.getCameraHeightAboveGroundSetting() < 0.05) {
 			stairs.steps.push_back((*it));
 		}
 
@@ -163,10 +161,10 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &input) {
 
 	// Delete located starting step from list of planes
 	planes.erase(planes.begin() + remove);
-	ROS_INFO("Found starting step");
+	ROS_INFO("Found starting step");*/
 
 	// look for more steps
-	if (stairs.steps.size() > 0) {
+	/*if (stairs.steps.size() > 0) {
 		bool somethingChanged = false;
 		unsigned int stepCounter = 0;
 		while (planes.size() > 0) {
@@ -175,7 +173,7 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &input) {
 			vector<int> removeElements;
 			unsigned int i = 0;
 			for (vector<struct Plane>::iterator it = planes.begin(); it != planes.end(); it++) {
-				if (fabs((*it).min.y - stairs.steps.at(stepCounter).max.y) < 0.08) {
+				if (fabs((*it).getMin().y - stairs.steps.at(stepCounter).getMax().y) < 0.08) {
 					stairs.steps.push_back((*it));
 					somethingChanged = true;
 					removeElements.push_back(i);
@@ -197,16 +195,16 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &input) {
 
 			somethingChanged = false;
 		}	
-	}
+	}*/
 
 	// transform to world coordinates
-	transformStairsToWorldCoordinates(&stairs);
+	/*transformStairsToWorldCoordinates(&stairs, rc.getCameraSetting(), rc.getWorldFrameSetting());
 
 	// check if this stairs is already known
 	if (!stairsAlreadyKnown(&stairs) && stairs.steps.size() > 0) {
 		ROS_INFO("New stairs pubslished");
 		global_stairs.push_back(stairs);
-		showStairsInRVIZ();
+		rc.publishStairs(&global_stairs);
 	}*/
 }
 
@@ -298,7 +296,7 @@ bool importStairs(hmmwv_stairsdetection::ImportStairs::Request &req,
 			p1ROS.x = (*it)[convert.str()]["p1"]["x"].as<double>();
 			p1ROS.y = (*it)[convert.str()]["p1"]["y"].as<double>();
 			p1ROS.z = (*it)[convert.str()]["p1"]["z"].as<double>();
-			//transformToBaseLinkCoordinates(&p1ROS);
+			transformToBaseLinkCoordinates(&p1ROS, rc.getCameraSetting(), rc.getWorldFrameSetting());
 			pcl::PointXYZ p1PCL;
 			transformROSPointToPCLPoint(&p1ROS, &p1PCL);
 
@@ -306,7 +304,7 @@ bool importStairs(hmmwv_stairsdetection::ImportStairs::Request &req,
 			p3ROS.x = (*it)[convert.str()]["p3"]["x"].as<double>();
 			p3ROS.y = (*it)[convert.str()]["p3"]["y"].as<double>();
 			p3ROS.z = (*it)[convert.str()]["p3"]["z"].as<double>();
-			//transformToBaseLinkCoordinates(&p3ROS);
+			transformToBaseLinkCoordinates(&p3ROS, rc.getCameraSetting(), rc.getWorldFrameSetting());
 			pcl::PointXYZ p3PCL;
 			transformROSPointToPCLPoint(&p3ROS, &p3PCL);
 
@@ -317,20 +315,22 @@ bool importStairs(hmmwv_stairsdetection::ImportStairs::Request &req,
 		global_stairs.push_back(stairs);
 	}
 
-	rc.showStairsInRVIZ(&global_stairs);
+	rc.publishStairs(&global_stairs);
 	res.result = "Seems like the import has worked.";
 	return true;
 }
 
 bool clearStairs(hmmwv_stairsdetection::ClearStairs::Request &req, hmmwv_stairsdetection::ClearStairs::Response &res) {
 	global_stairs.clear();
-	rc.showStairsInRVIZ(&global_stairs);
+	rc.publishStairs(&global_stairs);
 	return true;
 }
 
 int main(int argc, char **argv) {
 
+	ROS_INFO("Starting up...");
 	rc.init(argc, argv, &callback, &exportStairs, &importStairs, &clearStairs, &global_stairs);
+	ROS_INFO("Initiated ROSContext successfully.");
 
 	return 0;
 }

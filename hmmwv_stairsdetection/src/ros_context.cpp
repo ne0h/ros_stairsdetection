@@ -15,9 +15,12 @@ ROSContext::~ROSContext() {
 }
 
 void ROSContext::init(int argc, char **argv, void (*callback)(const sensor_msgs::PointCloud2ConstPtr&),
-		bool (*exportStairs)(hmmwv_stairsdetection::ExportStairs::Request&, hmmwv_stairsdetection::ExportStairs::Response&),
-		bool (*importStairs)(hmmwv_stairsdetection::ImportStairs::Request&, hmmwv_stairsdetection::ImportStairs::Response&),
-		bool (*clearStairs)(hmmwv_stairsdetection::ClearStairs::Request&, hmmwv_stairsdetection::ClearStairs::Response&),
+		bool (*exportStairs)(hmmwv_stairsdetection::ExportStairs::Request&,
+			hmmwv_stairsdetection::ExportStairs::Response&),
+		bool (*importStairs)(hmmwv_stairsdetection::ImportStairs::Request&,
+			hmmwv_stairsdetection::ImportStairs::Response&),
+		bool (*clearStairs)(hmmwv_stairsdetection::ClearStairs::Request&,
+			hmmwv_stairsdetection::ClearStairs::Response&),
 		std::vector<struct Stairs> *global_stairs) {
 
 	/*
@@ -26,7 +29,11 @@ void ROSContext::init(int argc, char **argv, void (*callback)(const sensor_msgs:
 	std::string inputSetting;
 	std::string stepsSetting;
 	std::string stairsSetting;
-	bool   useSampleDataSetting;
+	bool useSampleDataSetting;
+
+	ros::init(argc, argv, "stairsdetection");
+	ros::NodeHandle nh;
+
 	ros::param::get("~input",  inputSetting);
 	ros::param::get("~steps", stepsSetting);
 	ros::param::get("~stairs", stairsSetting);
@@ -48,9 +55,6 @@ void ROSContext::init(int argc, char **argv, void (*callback)(const sensor_msgs:
 	ros::param::get("~namespace", m_namespaceSetting);
 
 	ros::param::get("~use_sample_data", useSampleDataSetting);
-
-	ros::init(argc, argv, "stairsdetection");
-	ros::NodeHandle nh;
 
 	/*
 	 * Init subscriber and listener
@@ -130,7 +134,7 @@ void ROSContext::buildRosMarkerSteps(visualization_msgs::Marker *marker, std::ve
 
 		const float width  = fabs((*it).getMax().x - (*it).getMin().x);
 		const float height = fabs((*it).getMax().y - (*it).getMin().y);
-		ROS_INFO("Width: %f | Height: %f | Height above zero: %f", width, height,
+		ROS_DEBUG("Width: %f | Height: %f | Height above zero: %f", width, height,
 			(*it).getMin().y + m_cameraHeightAboveGroundSetting);
 	}
 }
@@ -186,7 +190,7 @@ void ROSContext::buildROSMarkerStairs(visualization_msgs::Marker *marker, struct
 /**
  * Shows stairs in RVIZ
  */
-void ROSContext::showStairsInRVIZ(std::vector<struct Stairs> *stairs) {
+void ROSContext::publishStairs(std::vector<struct Stairs> *stairs) {
 
 	if (m_publishStairsSetting) {
 		visualization_msgs::MarkerArray markerArray;

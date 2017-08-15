@@ -39,9 +39,12 @@ public:
 	~ROSContext();
 
 	void init(int argc, char **argv, void (*callback)(const sensor_msgs::PointCloud2ConstPtr&),
-		bool (*exportStairs)(hmmwv_stairsdetection::ExportStairs::Request&, hmmwv_stairsdetection::ExportStairs::Response&),
-		bool (*importStairs)(hmmwv_stairsdetection::ImportStairs::Request&, hmmwv_stairsdetection::ImportStairs::Response&),
-		bool (*clearStairs)(hmmwv_stairsdetection::ClearStairs::Request&, hmmwv_stairsdetection::ClearStairs::Response&),
+		bool (*exportStairs)(hmmwv_stairsdetection::ExportStairs::Request&,
+			hmmwv_stairsdetection::ExportStairs::Response&),
+		bool (*importStairs)(hmmwv_stairsdetection::ImportStairs::Request&,
+			hmmwv_stairsdetection::ImportStairs::Response&),
+		bool (*clearStairs)(hmmwv_stairsdetection::ClearStairs::Request&,
+			hmmwv_stairsdetection::ClearStairs::Response&),
 		std::vector<struct Stairs> *global_stairs);
 
 	bool getPublishStepsSetting() {
@@ -76,9 +79,17 @@ public:
 		return m_segmentationThresholdSetting;
 	}
 
+	std::string getCameraSetting() {
+		return m_cameraSetting;
+	}
+
+	std::string getWorldFrameSetting() {
+		return m_worldFrameSetting;
+	}
+
 	void publishSteps(std::vector<Plane> *planes);
 
-	void showStairsInRVIZ(std::vector<struct Stairs> *stairs);
+	void publishStairs(std::vector<struct Stairs> *stairs);
 
 private:
 	ros::Publisher m_pubSteps;
