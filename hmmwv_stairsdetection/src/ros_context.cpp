@@ -122,10 +122,8 @@ void ROSContext::buildRosMarkerSteps(visualization_msgs::Marker *marker, std::ve
 		marker->points.push_back(p4);
 		marker->points.push_back(p1);
 
-		const float width  = fabs((*it).getMax().x - (*it).getMin().x);
-		const float height = fabs((*it).getMax().y - (*it).getMin().y);
-		ROS_DEBUG("Width: %f | Height: %f | Height above zero: %f", width, height,
-			(*it).getMin().y + m_cameraHeightAboveGroundSetting);
+		ROS_INFO("Width: %f | Height: %f | Height above zero: %f", (*it).getWidth(), (*it).getHeight(),
+				(*it).getHeightAboveGround());
 	}
 }
 

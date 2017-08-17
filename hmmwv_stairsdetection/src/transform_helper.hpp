@@ -25,6 +25,11 @@ class TransformHelper {
 
 public:
 
+	/**
+	 * Creates a new TransformHelper.
+	 * @param cameraSetting the ROS topic for the camera frame
+	 * @param worldFrameSetting the ROS topic for the world frame
+	 */
 	TransformHelper(std::string cameraSetting, std::string worldFrameSetting)
 			: m_cameraSetting(cameraSetting), m_worldFrameSetting(worldFrameSetting) {}
 
@@ -34,7 +39,7 @@ public:
 	~TransformHelper() {}
 
 	/**
-	 * Returns the axis-aligned bounding box of the point cloud
+	 * Returns the axis-aligned bounding box of a point cloud
 	 * @param cloud the input point cloud
 	 * @param plane the output Plane
 	 */
@@ -43,21 +48,25 @@ public:
 	/**
 	 * Transforms the coordinates of Stairs into world coordinates.
 	 * @param stairs the input stairs
-	 * @param cameraSetting the ROS topic for the camera frame
-	 * @param worldFrameSetting the ROS topic for the world frame
 	 */
 	void transformStairsToWorldCoordinates(struct Stairs *stairs);
 
 	/**
-	 * Transforms a Point into world coordinates.
+	 * Transforms the coordinates of a PCL point into world coordinates.
 	 * @param p the input Point
-	 * @param cameraSetting the ROS topic for the camera frame
-	 * @param worldFrameSetting the ROS topic for the world frame
 	 */
 	bool transformToWorldCoordinates(pcl::PointXYZ *point);
 
+	/**
+	 * Transforms the coordinates of a ROS point to world coordinates.
+	 * @param point the input point
+	 */
 	bool transformToWorldCoordinates(geometry_msgs::Point *point);
 
+	/**
+	 * Transforms the coordinates of a Plane to world coordinates
+	 * @param plane the input Plane
+	 */
 	bool transformToWorldCoordinates(Plane *plane);
 
 	/**
@@ -73,9 +82,17 @@ public:
 	 *
 	 * Documentation:
 	 * ROS: http://wiki.ros.org/geometry/CoordinateFrameConventions
+	 *
+	 * @param input the input ROS point
+	 * @param output the output PCL point 
 	 */
 	void transformROSPointToPCLPoint(geometry_msgs::Point *input, pcl::PointXYZ *output);
 
+	/**
+	 * Transforms the coorindates of a ROS point to world coordinates.
+	 * @param point the ROS point to transform
+	 * @return True if the transformation has been successful
+	 */
 	bool transformToBaseLinkCoordinates(geometry_msgs::Point *point);
 
 	void buildStepFromAABB(Plane *plane, std::vector<pcl::PointXYZ> *points);

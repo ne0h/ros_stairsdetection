@@ -128,7 +128,7 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &input) {
 	vector<struct Plane> stepsToRemove;
 	for (vector<struct Plane>::iterator it = planes.begin(); it != planes.end();) {
 
-		if ((*it).getMin().y + rc.getCameraHeightAboveGroundSetting() < 0.05) {
+		if ((*it).getMin().y < 0.05) {
 			ROS_INFO("Found starting step: creating new stairs...");
 
 			// Create stairs and add step to the newly created stairs
@@ -145,22 +145,6 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &input) {
 			++it;
 		}
 	}
-
-	/*
-	// search for starting steps
-	struct Stairs stairs;
-	unsigned int remove = 0;
-	for (vector<struct Plane>::iterator it = planes.begin(); it != planes.end(); it++) {
-		if ((*it).getMin().y + rc.getCameraHeightAboveGroundSetting() < 0.05) {
-			stairs.steps.push_back((*it));
-		}
-
-		remove++;
-	}
-
-	// Delete located starting step from list of planes
-	planes.erase(planes.begin() + remove);
-	ROS_INFO("Found starting step");*/
 
 	// look for more steps
 	/*if (stairs.steps.size() > 0) {

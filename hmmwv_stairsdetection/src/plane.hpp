@@ -97,7 +97,7 @@ public:
 	 * @return a new point that is in the middle of top edge
 	 */
 	pcl::PointXYZ getCenterTop() {
-		pcl::PointXYZ(m_max.x, (m_max.y + m_min.y) / 2, (m_max.z + m_min.z) / 2);
+		return pcl::PointXYZ((m_max.x + m_min.x) / 2, m_max.y, (m_max.z + m_min.z) / 2);
 	}
 
 	/**
@@ -105,7 +105,7 @@ public:
 	 * @return a new point that is in the middle of the bottom edge
 	 */
 	pcl::PointXYZ getCenterBottom() {
-		return pcl::PointXYZ(m_min.x, (m_max.y + m_min.y) / 2, (m_max.z + m_min.z) / 2);
+		return pcl::PointXYZ((m_max.x + m_min.x) / 2, m_min.y, (m_max.z + m_min.z) / 2);
 	}
 
 	/**
