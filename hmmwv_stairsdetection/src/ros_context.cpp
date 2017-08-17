@@ -4,16 +4,6 @@
 #include <geometry_msgs/Point32.h>
 #include <geometry_msgs/TransformStamped.h>
 
-#include "transform_helpers.hpp"
-
-ROSContext::ROSContext() {
-
-}
-
-ROSContext::~ROSContext() {
-
-}
-
 void ROSContext::init(int argc, char **argv, void (*callback)(const sensor_msgs::PointCloud2ConstPtr&),
 		bool (*exportStairs)(hmmwv_stairsdetection::ExportStairs::Request&,
 			hmmwv_stairsdetection::ExportStairs::Response&),
@@ -109,19 +99,19 @@ void ROSContext::buildRosMarkerSteps(visualization_msgs::Marker *marker, std::ve
 	for (std::vector<Plane>::iterator it = planes->begin(); it != planes->end(); it++) {
 
 		std::vector<pcl::PointXYZ> points;
-		buildStepFromAABB(&(*it), &points);
+		m_th.buildStepFromAABB(&(*it), &points);
 
 		geometry_msgs::Point p1;
-		transformPCLPointToROSPoint(&points.at(0), &p1);
+		m_th.transformPCLPointToROSPoint(&points.at(0), &p1);
 
 		geometry_msgs::Point p2;
-		transformPCLPointToROSPoint(&points.at(1), &p2);
+		m_th.transformPCLPointToROSPoint(&points.at(1), &p2);
 
 		geometry_msgs::Point p3;
-		transformPCLPointToROSPoint(&points.at(2), &p3);
+		m_th.transformPCLPointToROSPoint(&points.at(2), &p3);
 
 		geometry_msgs::Point p4;
-		transformPCLPointToROSPoint(&points.at(3), &p4);
+		m_th.transformPCLPointToROSPoint(&points.at(3), &p4);
 
 		marker->points.push_back(p1);
 		marker->points.push_back(p2);
@@ -148,26 +138,26 @@ void ROSContext::buildROSMarkerStairs(visualization_msgs::Marker *marker, struct
 	if (stairs->steps.size() > 0) {
 		for (unsigned int i = 1; i < stairs->steps.size(); i++) {
 			std::vector<pcl::PointXYZ> pointsCur;
-			buildStepFromAABB(&stairs->steps.at(i), &pointsCur);
+			m_th.buildStepFromAABB(&stairs->steps.at(i), &pointsCur);
 			geometry_msgs::Point pc1;
-			transformPCLPointToROSPoint(&pointsCur.at(0), &pc1);
+			m_th.transformPCLPointToROSPoint(&pointsCur.at(0), &pc1);
 			geometry_msgs::Point pc2;
-			transformPCLPointToROSPoint(&pointsCur.at(1), &pc2);
+			m_th.transformPCLPointToROSPoint(&pointsCur.at(1), &pc2);
 			geometry_msgs::Point pc3;
-			transformPCLPointToROSPoint(&pointsCur.at(2), &pc3);
+			m_th.transformPCLPointToROSPoint(&pointsCur.at(2), &pc3);
 			geometry_msgs::Point pc4;
-			transformPCLPointToROSPoint(&pointsCur.at(3), &pc4);
+			m_th.transformPCLPointToROSPoint(&pointsCur.at(3), &pc4);
 
 			std::vector<pcl::PointXYZ> pointsBefore;
-			buildStepFromAABB(&stairs->steps.at(i - 1), &pointsBefore);
+			m_th.buildStepFromAABB(&stairs->steps.at(i - 1), &pointsBefore);
 			geometry_msgs::Point pb1;
-			transformPCLPointToROSPoint(&pointsBefore.at(0), &pb1);
+			m_th.transformPCLPointToROSPoint(&pointsBefore.at(0), &pb1);
 			geometry_msgs::Point pb2;
-			transformPCLPointToROSPoint(&pointsBefore.at(1), &pb2);
+			m_th.transformPCLPointToROSPoint(&pointsBefore.at(1), &pb2);
 			geometry_msgs::Point pb3;
-			transformPCLPointToROSPoint(&pointsBefore.at(2), &pb3);
+			m_th.transformPCLPointToROSPoint(&pointsBefore.at(2), &pb3);
 			geometry_msgs::Point pb4;
-			transformPCLPointToROSPoint(&pointsBefore.at(3), &pb4);
+			m_th.transformPCLPointToROSPoint(&pointsBefore.at(3), &pb4);
 
 			/*
 			 * Get vertices of the rectangle

@@ -12,7 +12,11 @@
 #include <hmmwv_stairsdetection/ImportStairs.h>
 #include <hmmwv_stairsdetection/ClearStairs.h>
 
+#include <geometry_msgs/Point.h>
+#include <tf2_ros/transform_listener.h>
+
 #include "plane.hpp"
+#include "transform_helper.hpp"
 
 /*
  * Get vertices of the rectangle
@@ -34,9 +38,9 @@ void showStairsInRVIZ(std::vector<struct Stairs> *stairs);*/
 
 class ROSContext {
 public:
-	ROSContext();
+	ROSContext() : m_th(TransformHelper(m_cameraSetting, m_worldFrameSetting)) {}
 
-	~ROSContext();
+	~ROSContext() {}
 
 	void init(int argc, char **argv, void (*callback)(const sensor_msgs::PointCloud2ConstPtr&),
 		bool (*exportStairs)(hmmwv_stairsdetection::ExportStairs::Request&,
@@ -87,6 +91,10 @@ public:
 		return m_worldFrameSetting;
 	}
 
+	TransformHelper* getTransformHelper() {
+		return &m_th;
+	}
+
 	void publishSteps(std::vector<Plane> *planes);
 
 	void publishStairs(std::vector<struct Stairs> *stairs);
@@ -114,6 +122,8 @@ private:
 	std::string m_cameraSetting;
 	std::string m_worldFrameSetting;
 	std::string m_namespaceSetting;
+
+	TransformHelper m_th;
 
 	void buildRosMarkerSteps(visualization_msgs::Marker *marker, std::vector<Plane> *planes, float *color);
 

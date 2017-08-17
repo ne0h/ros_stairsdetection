@@ -20,7 +20,7 @@
 
 #include "ros_context.hpp"
 #include "plane.hpp"
-#include "transform_helpers.hpp"
+#include "transform_helper.hpp"
 #include "print_helpers.hpp"
 
 using namespace std;
@@ -56,7 +56,7 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &input) {
 	pcl::PointIndices::Ptr inliers(new pcl::PointIndices);
 
 	pcl::SACSegmentation<pcl::PointXYZ> seg;
-	//seg.setOptimizeCoefficients(true);
+	seg.setOptimizeCoefficients(true);
 
 	seg.setModelType(pcl::SACMODEL_PLANE);
 	seg.setMethodType(pcl::SAC_RANSAC);
@@ -70,7 +70,7 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &input) {
 
 	vector<struct Plane> planes;
 
-	// Extract a model and repeat while 0.5% of the original cloud is still present
+	// Extract a model and repeat while 1% of the original cloud is still present
 	while (cloud->points.size() > 0.1 * pointsAtStart) {
 		id++;
 
@@ -94,20 +94,18 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &input) {
 
 		// calculate AABB and add to planes list
 		Plane plane;
-		getAABB(cloud1, &plane);
-		plane.calculateCenterTop();
-
-		const float width  = fabs(plane.getMax().x - plane.getMin().x);
-		const float height = fabs(plane.getMax().y - plane.getMin().y);
+		rc.getTransformHelper()->getAABB(cloud1, &plane);
+		rc.getTransformHelper()->transformToWorldCoordinates(&plane);
 
 		// Remove planes with less than 5cm or more than 40cm and remove rectangles with  a width of less than 30cm
-		if (height > rc.getMaxStepHeightSetting() || height < rc.getMinStepHeightSetting()
-				|| width > rc.getMaxStepWidthSetting()) {
+		if (plane.getHeight() > rc.getMaxStepHeightSetting() || plane.getHeight() < rc.getMinStepHeightSetting()
+				|| plane.getWidth() > rc.getMaxStepWidthSetting()) {
 
 			continue;
 		}
 
 		planes.push_back(plane);
+		ROS_DEBUG("Plane: %s", plane.toString().c_str());
 	}
 
 	if (rc.getPublishStepsSetting()) {
@@ -129,6 +127,7 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &input) {
 	// Every new starting step starts new stairs -> all starting steps are erased from steps list
 	vector<struct Plane> stepsToRemove;
 	for (vector<struct Plane>::iterator it = planes.begin(); it != planes.end();) {
+
 		if ((*it).getMin().y + rc.getCameraHeightAboveGroundSetting() < 0.05) {
 			ROS_INFO("Found starting step: creating new stairs...");
 
@@ -138,7 +137,7 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &input) {
 			located_stairs.push_back(s);
 
 			stepsToRemove.push_back((*it));
-			ROS_INFO("Mark step '%s' to be removed.", (*it).toString().c_str());
+			ROS_INFO("Removed '%s'", (*it).toString().c_str());
 
 			// Remove from steps list
 			it = planes.erase(it);
@@ -241,14 +240,14 @@ bool exportStairs(hmmwv_stairsdetection::ExportStairs::Request &req,
 			// get points
 			YAML::Node pointsNode;
 			vector<pcl::PointXYZ> points;
-			buildStepFromAABB(&(*jt), &points);
+			rc.getTransformHelper()->buildStepFromAABB(&(*jt), &points);
 			unsigned int j = 1;
 			for (vector<pcl::PointXYZ>::iterator kt = points.begin(); kt != points.end(); kt++) {
 				YAML::Node pointNode;
 
 				geometry_msgs::Point point;
-				transformPCLPointToROSPoint(&(*kt), &point);
-				//transformToWorldCoordinates(&point);
+				rc.getTransformHelper()->transformPCLPointToROSPoint(&(*kt), &point);
+				rc.getTransformHelper()->transformToWorldCoordinates(&point);
 				pointNode["x"] = point.x;
 				pointNode["y"] = point.y;
 				pointNode["z"] = point.z;
@@ -296,17 +295,17 @@ bool importStairs(hmmwv_stairsdetection::ImportStairs::Request &req,
 			p1ROS.x = (*it)[convert.str()]["p1"]["x"].as<double>();
 			p1ROS.y = (*it)[convert.str()]["p1"]["y"].as<double>();
 			p1ROS.z = (*it)[convert.str()]["p1"]["z"].as<double>();
-			transformToBaseLinkCoordinates(&p1ROS, rc.getCameraSetting(), rc.getWorldFrameSetting());
+			rc.getTransformHelper()->transformToBaseLinkCoordinates(&p1ROS);
 			pcl::PointXYZ p1PCL;
-			transformROSPointToPCLPoint(&p1ROS, &p1PCL);
+			rc.getTransformHelper()->transformROSPointToPCLPoint(&p1ROS, &p1PCL);
 
 			geometry_msgs::Point p3ROS;
 			p3ROS.x = (*it)[convert.str()]["p3"]["x"].as<double>();
 			p3ROS.y = (*it)[convert.str()]["p3"]["y"].as<double>();
 			p3ROS.z = (*it)[convert.str()]["p3"]["z"].as<double>();
-			transformToBaseLinkCoordinates(&p3ROS, rc.getCameraSetting(), rc.getWorldFrameSetting());
+			rc.getTransformHelper()->transformToBaseLinkCoordinates(&p3ROS);
 			pcl::PointXYZ p3PCL;
-			transformROSPointToPCLPoint(&p3ROS, &p3PCL);
+			rc.getTransformHelper()->transformROSPointToPCLPoint(&p3ROS, &p3PCL);
 
 			Plane step(p1PCL, p3PCL);
 			stairs.steps.push_back(step);

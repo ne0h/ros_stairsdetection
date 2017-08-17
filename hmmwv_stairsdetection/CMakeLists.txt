@@ -125,7 +125,7 @@ include_directories(
 add_executable(stairsdetection
 	src/stairsdetection.cpp
 	src/ros_context.cpp
-	src/transform_helpers.cpp
+	src/transform_helper.cpp
 	src/print_helpers.cpp
 )
 target_link_libraries(stairsdetection ${catkin_LIBRARIES} yaml-cpp)
