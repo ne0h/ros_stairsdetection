@@ -8,9 +8,9 @@
 #include <sensor_msgs/PointCloud2.h>
 #include <visualization_msgs/MarkerArray.h>
 
-#include <hmmwv_stairsdetection/ExportStairs.h>
-#include <hmmwv_stairsdetection/ImportStairs.h>
-#include <hmmwv_stairsdetection/ClearStairs.h>
+#include <ros_stairsdetection/ExportStairs.h>
+#include <ros_stairsdetection/ImportStairs.h>
+#include <ros_stairsdetection/ClearStairs.h>
 
 #include <geometry_msgs/Point.h>
 #include <tf2_ros/transform_listener.h>
@@ -43,12 +43,12 @@ public:
 	~ROSContext() {}
 
 	void init(int argc, char **argv, void (*callback)(const sensor_msgs::PointCloud2ConstPtr&),
-		bool (*exportStairs)(hmmwv_stairsdetection::ExportStairs::Request&,
-			hmmwv_stairsdetection::ExportStairs::Response&),
-		bool (*importStairs)(hmmwv_stairsdetection::ImportStairs::Request&,
-			hmmwv_stairsdetection::ImportStairs::Response&),
-		bool (*clearStairs)(hmmwv_stairsdetection::ClearStairs::Request&,
-			hmmwv_stairsdetection::ClearStairs::Response&),
+		bool (*exportStairs)(ros_stairsdetection::ExportStairs::Request&,
+			ros_stairsdetection::ExportStairs::Response&),
+		bool (*importStairs)(ros_stairsdetection::ImportStairs::Request&,
+			ros_stairsdetection::ImportStairs::Response&),
+		bool (*clearStairs)(ros_stairsdetection::ClearStairs::Request&,
+			ros_stairsdetection::ClearStairs::Response&),
 		std::vector<struct Stairs> *global_stairs);
 
 	bool getPublishStepsSetting() {

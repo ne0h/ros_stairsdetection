@@ -14,9 +14,9 @@
 
 #include <yaml-cpp/yaml.h>
 
-#include <hmmwv_stairsdetection/ExportStairs.h>
-#include <hmmwv_stairsdetection/ImportStairs.h>
-#include <hmmwv_stairsdetection/ClearStairs.h>
+#include <ros_stairsdetection/ExportStairs.h>
+#include <ros_stairsdetection/ImportStairs.h>
+#include <ros_stairsdetection/ClearStairs.h>
 
 #include "ros_context.hpp"
 #include "plane.hpp"
@@ -207,8 +207,8 @@ bool stairsAlreadyKnown(struct Stairs *stairs) {
 	return false;
 }
 
-bool exportStairs(hmmwv_stairsdetection::ExportStairs::Request &req,
-		hmmwv_stairsdetection::ExportStairs::Response &res) {
+bool exportStairs(ros_stairsdetection::ExportStairs::Request &req,
+		ros_stairsdetection::ExportStairs::Response &res) {
 
 	YAML::Node stairsNode;
 
@@ -259,8 +259,8 @@ bool exportStairs(hmmwv_stairsdetection::ExportStairs::Request &req,
 	return true;
 }
 
-bool importStairs(hmmwv_stairsdetection::ImportStairs::Request &req,
-		hmmwv_stairsdetection::ImportStairs::Response &res) {
+bool importStairs(ros_stairsdetection::ImportStairs::Request &req,
+		ros_stairsdetection::ImportStairs::Response &res) {
 
 	// clear current data
 	global_stairs.clear();
@@ -303,7 +303,7 @@ bool importStairs(hmmwv_stairsdetection::ImportStairs::Request &req,
 	return true;
 }
 
-bool clearStairs(hmmwv_stairsdetection::ClearStairs::Request &req, hmmwv_stairsdetection::ClearStairs::Response &res) {
+bool clearStairs(ros_stairsdetection::ClearStairs::Request &req, ros_stairsdetection::ClearStairs::Response &res) {
 	global_stairs.clear();
 	rc.publishStairs(&global_stairs);
 	return true;
