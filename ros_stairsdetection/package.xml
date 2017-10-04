@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package>
-  <name>hmmwv_stairsdetection</name>
+  <name>ros_stairsdetection</name>
   <version>0.1.0</version>
   <description>HMMWVs your life!</description>
 
