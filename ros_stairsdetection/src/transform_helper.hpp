@@ -10,16 +10,13 @@
 #include <pcl/features/moment_of_inertia_estimation.h>
 
 #include "plane.hpp"
+#include "stairway.hpp"
 
 /**
  * @file transform_helpers.hpp
  * @brief Helper functions to do transformation.
  * @author Maximilian Hess <mail@ne0h.de>
  */
-
-typedef struct Stairs {
-	std::vector<Plane> steps;
-} Stairs;
 
 class TransformHelper {
 
@@ -43,31 +40,31 @@ public:
 	 * @param cloud the input point cloud
 	 * @param plane the output Plane
 	 */
-	void getAABB(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, Plane *plane);
+	void getAABB(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, Plane &plane);
 
 	/**
 	 * Transforms the coordinates of Stairs into world coordinates.
 	 * @param stairs the input stairs
 	 */
-	void transformStairsToWorldCoordinates(struct Stairs *stairs);
+	void transformStairsToWorldCoordinates(Stairway &stairway);
 
 	/**
 	 * Transforms the coordinates of a PCL point into world coordinates.
 	 * @param p the input Point
 	 */
-	bool transformToWorldCoordinates(pcl::PointXYZ *point);
+	bool transformToWorldCoordinates(pcl::PointXYZ &point);
 
 	/**
 	 * Transforms the coordinates of a ROS point to world coordinates.
 	 * @param point the input point
 	 */
-	bool transformToWorldCoordinates(geometry_msgs::Point *point);
+	bool transformToWorldCoordinates(geometry_msgs::Point &point);
 
 	/**
 	 * Transforms the coordinates of a Plane to world coordinates
 	 * @param plane the input Plane
 	 */
-	bool transformToWorldCoordinates(Plane *plane);
+	bool transformToWorldCoordinates(Plane &plane);
 
 	/**
 	 * Transforms a point from PCL coordinate system to ROS coordinate system.
@@ -75,7 +72,7 @@ public:
 	 * Documentation:
 	 * ROS: http://wiki.ros.org/geometry/CoordinateFrameConventions
 	 */
-	void transformPCLPointToROSPoint(pcl::PointXYZ *input, geometry_msgs::Point *output);
+	void transformPCLPointToROSPoint(pcl::PointXYZ &input, geometry_msgs::Point &output);
 
 	/**
 	 * Transforms a point from ROS coordinate system to PCL coordinate system.
@@ -86,16 +83,16 @@ public:
 	 * @param input the input ROS point
 	 * @param output the output PCL point 
 	 */
-	void transformROSPointToPCLPoint(geometry_msgs::Point *input, pcl::PointXYZ *output);
+	void transformROSPointToPCLPoint(geometry_msgs::Point &input, pcl::PointXYZ &output);
 
 	/**
 	 * Transforms the coorindates of a ROS point to world coordinates.
 	 * @param point the ROS point to transform
 	 * @return True if the transformation has been successful
 	 */
-	bool transformToBaseLinkCoordinates(geometry_msgs::Point *point);
+	bool transformToBaseLinkCoordinates(geometry_msgs::Point &point);
 
-	void buildStepFromAABB(Plane *plane, std::vector<pcl::PointXYZ> *points);
+	void buildStepFromAABB(Plane &plane, std::vector<pcl::PointXYZ> &points);
 
 private:
 	std::string m_cameraSetting;

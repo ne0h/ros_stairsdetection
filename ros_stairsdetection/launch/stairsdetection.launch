@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <launch>
 
-	<node name="stairsdetection" pkg="hmmwv_stairsdetection" type="stairsdetection" output="screen">
+	<node name="stairsdetection" pkg="ros_stairsdetection" type="stairsdetection" output="screen">
 		<param name="input" value="/camera/depth/points" />
 		<param name="steps" value="/hmmwv/steps" />
 		<param name="stairs" value="/hmmwv/stairs" />

@@ -16,6 +16,7 @@
 #include <tf2_ros/transform_listener.h>
 
 #include "plane.hpp"
+#include "stairway.hpp"
 #include "transform_helper.hpp"
 
 /*
@@ -49,7 +50,7 @@ public:
 			ros_stairsdetection::ImportStairs::Response&),
 		bool (*clearStairs)(ros_stairsdetection::ClearStairs::Request&,
 			ros_stairsdetection::ClearStairs::Response&),
-		std::vector<struct Stairs> *global_stairs);
+		std::vector<Stairway> *global_stairs);
 
 	bool getPublishStepsSetting() {
 		return m_publishStepsSetting;
@@ -91,13 +92,13 @@ public:
 		return m_worldFrameSetting;
 	}
 
-	TransformHelper* getTransformHelper() {
-		return &m_th;
+	TransformHelper& getTransformHelper() {
+		return m_th;
 	}
 
-	void publishSteps(std::vector<Plane> *planes);
+	void publishSteps(std::vector<Plane> &planes);
 
-	void publishStairs(std::vector<struct Stairs> *stairs);
+	void publishStairs(std::vector<Stairway> &stairway);
 
 private:
 	ros::Publisher m_pubSteps;
@@ -125,9 +126,9 @@ private:
 
 	TransformHelper m_th;
 
-	void buildRosMarkerSteps(visualization_msgs::Marker *marker, std::vector<Plane> *planes, float *color);
+	void buildRosMarkerSteps(visualization_msgs::Marker &marker, std::vector<Plane> &planes, float (&color)[3]);
 
-	void buildROSMarkerStairs(visualization_msgs::Marker *marker, struct Stairs *stairs, float *color);
+	void buildROSMarkerStairs(visualization_msgs::Marker &marker, Stairway &stairway, float (&color)[3]);
 };
 
 #endif

@@ -1,5 +1,4 @@
-#ifndef PLANE_HPP
-#define PLANE_HPP
+#pragma once
 
 #include <sstream>
 #include <cmath>
@@ -144,5 +143,3 @@ private:
 	pcl::PointXYZ m_min;
 	pcl::PointXYZ m_max;
 };
-
-#endif

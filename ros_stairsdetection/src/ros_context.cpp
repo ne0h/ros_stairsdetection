@@ -11,7 +11,7 @@ void ROSContext::init(int argc, char **argv, void (*callback)(const sensor_msgs:
 			ros_stairsdetection::ImportStairs::Response&),
 		bool (*clearStairs)(ros_stairsdetection::ClearStairs::Request&,
 			ros_stairsdetection::ClearStairs::Response&),
-		std::vector<struct Stairs> *global_stairs) {
+		std::vector<Stairway> *global_stairs) {
 
 	/*
 	 * load parameters from launch file
@@ -63,14 +63,14 @@ void ROSContext::init(int argc, char **argv, void (*callback)(const sensor_msgs:
 	// add test data
 	if (useSampleDataSetting) {
 		for (unsigned int i = 0; i < 3; i++) {
-			struct Stairs s;
-			Plane p1(pcl::PointXYZ(1*i, 2*i, 3*i), pcl::PointXYZ(1.5*i, 2.5*i, 3.5*i));
+			Stairway s;
+			Plane p1(pcl::PointXYZ(1*i, 2*i, 3*i),       pcl::PointXYZ(1.5*i, 2.5*i, 3.5*i));
 			Plane p2(pcl::PointXYZ(1.1*i, 2.1*i, 3.1*i), pcl::PointXYZ(1.4*i, 2.4*i, 3.4*i));
 			Plane p3(pcl::PointXYZ(1.2*i, 2.2*i, 3.2*i), pcl::PointXYZ(1.3*i, 2.3*i, 3.3*i));
 
-			s.steps.push_back(p1);
-			s.steps.push_back(p2);
-			s.steps.push_back(p3);
+			s.getSteps().push_back(p1);
+			s.getSteps().push_back(p2);
+			s.getSteps().push_back(p3);
 
 			global_stairs->push_back(s);
 		}
@@ -79,83 +79,83 @@ void ROSContext::init(int argc, char **argv, void (*callback)(const sensor_msgs:
 	ros::spin();
 }
 
-void ROSContext::buildRosMarkerSteps(visualization_msgs::Marker *marker, std::vector<Plane> *planes, float *color) {
+void ROSContext::buildRosMarkerSteps(visualization_msgs::Marker &marker, std::vector<Plane> &planes, float (&color)[3]) {
 
-	marker->header.frame_id = m_cameraSetting.c_str();
-	marker->header.stamp = ros::Time::now();
-	marker->ns = m_namespaceSetting.c_str();
-	marker->id = 0;
-	marker->lifetime = ros::Duration();
+	marker.header.frame_id = m_cameraSetting.c_str();
+	marker.header.stamp = ros::Time::now();
+	marker.ns = m_namespaceSetting.c_str();
+	marker.id = 0;
+	marker.lifetime = ros::Duration();
 
-	marker->type = visualization_msgs::Marker::LINE_LIST;
-	marker->action = visualization_msgs::Marker::ADD;
+	marker.type = visualization_msgs::Marker::LINE_LIST;
+	marker.action = visualization_msgs::Marker::ADD;
 
-	marker->scale.x = 0.05f;
-	marker->color.r = color[0];
-	marker->color.g = color[1];
-	marker->color.b = color[2];
-	marker->color.a = 1.0;
+	marker.scale.x = 0.05f;
+	marker.color.r = color[0];
+	marker.color.g = color[1];
+	marker.color.b = color[2];
+	marker.color.a = 1.0;
 
-	for (std::vector<Plane>::iterator it = planes->begin(); it != planes->end(); it++) {
+	for (std::vector<Plane>::iterator it = planes.begin(); it != planes.end(); it++) {
 
 		std::vector<pcl::PointXYZ> points;
-		m_th.buildStepFromAABB(&(*it), &points);
+		m_th.buildStepFromAABB(*it, points);
 
 		geometry_msgs::Point p1;
-		m_th.transformPCLPointToROSPoint(&points.at(0), &p1);
+		m_th.transformPCLPointToROSPoint(points.at(0), p1);
 
 		geometry_msgs::Point p2;
-		m_th.transformPCLPointToROSPoint(&points.at(1), &p2);
+		m_th.transformPCLPointToROSPoint(points.at(1), p2);
 
 		geometry_msgs::Point p3;
-		m_th.transformPCLPointToROSPoint(&points.at(2), &p3);
+		m_th.transformPCLPointToROSPoint(points.at(2), p3);
 
 		geometry_msgs::Point p4;
-		m_th.transformPCLPointToROSPoint(&points.at(3), &p4);
+		m_th.transformPCLPointToROSPoint(points.at(3), p4);
 
-		marker->points.push_back(p1);
-		marker->points.push_back(p2);
-		marker->points.push_back(p2);
-		marker->points.push_back(p3);
-		marker->points.push_back(p3);
-		marker->points.push_back(p4);
-		marker->points.push_back(p4);
-		marker->points.push_back(p1);
+		marker.points.push_back(p1);
+		marker.points.push_back(p2);
+		marker.points.push_back(p2);
+		marker.points.push_back(p3);
+		marker.points.push_back(p3);
+		marker.points.push_back(p4);
+		marker.points.push_back(p4);
+		marker.points.push_back(p1);
 
-		ROS_INFO("Width: %f | Height: %f | Height above zero: %f", (*it).getWidth(), (*it).getHeight(),
-				(*it).getHeightAboveGround());
+		ROS_INFO("Width: %f | Height: %f | Height above zero: %f", it->getWidth(), it->getHeight(),
+				it->getHeightAboveGround());
 	}
 }
 
-void ROSContext::buildROSMarkerStairs(visualization_msgs::Marker *marker, struct Stairs *stairs, float *color) {
+void ROSContext::buildROSMarkerStairs(visualization_msgs::Marker &marker, Stairway &stairway, float (&color)[3]) {
 	
 	// draw front of the steps
-	buildRosMarkerSteps(marker, &stairs->steps, color);
+	buildRosMarkerSteps(marker, stairway.getSteps(), color);
 
 	// draw surface of the steps
-	if (stairs->steps.size() > 0) {
-		for (unsigned int i = 1; i < stairs->steps.size(); i++) {
+	if (stairway.getSteps().size() > 0) {
+		for (unsigned int i = 1; i < stairway.getSteps().size(); i++) {
 			std::vector<pcl::PointXYZ> pointsCur;
-			m_th.buildStepFromAABB(&stairs->steps.at(i), &pointsCur);
+			m_th.buildStepFromAABB(stairway.getSteps().at(i), pointsCur);
 			geometry_msgs::Point pc1;
-			m_th.transformPCLPointToROSPoint(&pointsCur.at(0), &pc1);
+			m_th.transformPCLPointToROSPoint(pointsCur.at(0), pc1);
 			geometry_msgs::Point pc2;
-			m_th.transformPCLPointToROSPoint(&pointsCur.at(1), &pc2);
+			m_th.transformPCLPointToROSPoint(pointsCur.at(1), pc2);
 			geometry_msgs::Point pc3;
-			m_th.transformPCLPointToROSPoint(&pointsCur.at(2), &pc3);
+			m_th.transformPCLPointToROSPoint(pointsCur.at(2), pc3);
 			geometry_msgs::Point pc4;
-			m_th.transformPCLPointToROSPoint(&pointsCur.at(3), &pc4);
+			m_th.transformPCLPointToROSPoint(pointsCur.at(3), pc4);
 
 			std::vector<pcl::PointXYZ> pointsBefore;
-			m_th.buildStepFromAABB(&stairs->steps.at(i - 1), &pointsBefore);
+			m_th.buildStepFromAABB(stairway.getSteps().at(i - 1), pointsBefore);
 			geometry_msgs::Point pb1;
-			m_th.transformPCLPointToROSPoint(&pointsBefore.at(0), &pb1);
+			m_th.transformPCLPointToROSPoint(pointsBefore.at(0), pb1);
 			geometry_msgs::Point pb2;
-			m_th.transformPCLPointToROSPoint(&pointsBefore.at(1), &pb2);
+			m_th.transformPCLPointToROSPoint(pointsBefore.at(1), pb2);
 			geometry_msgs::Point pb3;
-			m_th.transformPCLPointToROSPoint(&pointsBefore.at(2), &pb3);
+			m_th.transformPCLPointToROSPoint(pointsBefore.at(2), pb3);
 			geometry_msgs::Point pb4;
-			m_th.transformPCLPointToROSPoint(&pointsBefore.at(3), &pb4);
+			m_th.transformPCLPointToROSPoint(pointsBefore.at(3), pb4);
 
 			/*
 			 * Get vertices of the rectangle
@@ -167,10 +167,10 @@ void ROSContext::buildROSMarkerStairs(visualization_msgs::Marker *marker, struct
 			 *
 			 */
 
-			marker->points.push_back(pc1);
-			marker->points.push_back(pb2);
-			marker->points.push_back(pc4);
-			marker->points.push_back(pb3);
+			marker.points.push_back(pc1);
+			marker.points.push_back(pb2);
+			marker.points.push_back(pc4);
+			marker.points.push_back(pb3);
 		}
 	}
 }
@@ -178,17 +178,17 @@ void ROSContext::buildROSMarkerStairs(visualization_msgs::Marker *marker, struct
 /**
  * Shows stairs in RVIZ
  */
-void ROSContext::publishStairs(std::vector<struct Stairs> *stairs) {
+void ROSContext::publishStairs(std::vector<Stairway> &stairway) {
 
 	if (m_publishStairsSetting) {
 		visualization_msgs::MarkerArray markerArray;
 
-		for (std::vector<struct Stairs>::iterator it = stairs->begin(); it != stairs->end(); it++) {
+		for (std::vector<Stairway>::iterator it = stairway.begin(); it != stairway.end(); it++) {
 			visualization_msgs::Marker marker;
 			float color[3];
 			color[0] = color[2] = 0.f;
 			color[1] = 1.f;
-			buildROSMarkerStairs(&marker, &(*it), color);
+			buildROSMarkerStairs(marker, *it, color);
 			markerArray.markers.push_back(marker);
 		}
 
@@ -196,14 +196,14 @@ void ROSContext::publishStairs(std::vector<struct Stairs> *stairs) {
 	}
 }
 
-void ROSContext::publishSteps(std::vector<Plane> *planes) {
+void ROSContext::publishSteps(std::vector<Plane> &planes) {
 	visualization_msgs::MarkerArray markerArray;
 	visualization_msgs::Marker marker;
 	float color[3];
 	color[0] = color[1] = 0.f;
 	color[2] = 1.f;
 
-	buildRosMarkerSteps(&marker, planes, color);
+	buildRosMarkerSteps(marker, planes, color);
 	markerArray.markers.push_back(marker);
 	m_pubSteps.publish(markerArray);
 }

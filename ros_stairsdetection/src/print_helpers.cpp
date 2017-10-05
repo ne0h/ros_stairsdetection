@@ -12,18 +12,18 @@ void printPlane(Plane *plane) {
 											plane->getMax().x, plane->getMax().y, plane->getMax().z);
 }
 
-void printStairs(struct Stairs *stairs) {
-	for (std::vector<Plane>::iterator it = stairs->steps.begin(); it != stairs->steps.end(); it++) {
-		ROS_INFO("Min: %f | %f | %f", (*it).getMin().x, (*it).getMin().y, (*it).getMin().z);
-		ROS_INFO("Max: %f | %f | %f", (*it).getMax().x, (*it).getMax().y, (*it).getMax().z);
+void printStairs(Stairway &stairway) {
+	for (std::vector<Plane>::iterator it = stairway.getSteps().begin(); it != stairway.getSteps().end(); it++) {
+		ROS_INFO("Min: %f | %f | %f", it->getMin().x, it->getMin().y, it->getMin().z);
+		ROS_INFO("Max: %f | %f | %f", it->getMax().x, it->getMax().y, it->getMax().z);
 		ROS_INFO("----------------");
 	}
 }
 
-void printStairs(std::vector<struct Stairs> *stairs) {
-	for (std::vector<struct Stairs>::iterator it = stairs->begin(); it != stairs->end(); it++) {
+void printStairs(std::vector<Stairway> &stairway) {
+	for (std::vector<Stairway>::iterator it = stairway.begin(); it != stairway.end(); it++) {
 		ROS_INFO("################################");
-		printStairs(&(*it));
+		printStairs(*it);
 	}
 	ROS_INFO("################################");
 }
