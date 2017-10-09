@@ -39,9 +39,6 @@ void showStairsInRVIZ(std::vector<struct Stairs> *stairs);*/
 
 class ROSContext {
 public:
-	ROSContext() : m_th(TransformHelper(m_cameraSetting, m_worldFrameSetting)) {}
-
-	~ROSContext() {}
 
 	void init(int argc, char **argv, void (*callback)(const sensor_msgs::PointCloud2ConstPtr&),
 		bool (*exportStairs)(ros_stairsdetection::ExportStairs::Request&,
@@ -58,10 +55,6 @@ public:
 
 	bool getPublishStairsSetting() {
 		return m_publishStairsSetting;
-	}
-
-	float getCameraHeightAboveGroundSetting() {
-		return m_cameraHeightAboveGroundSetting;
 	}
 
 	float getMaxStepWidthSetting() {
@@ -84,8 +77,8 @@ public:
 		return m_segmentationThresholdSetting;
 	}
 
-	std::string getCameraSetting() {
-		return m_cameraSetting;
+	std::string getCameraFrameSetting() {
+		return m_cameraFrameSetting;
 	}
 
 	std::string getWorldFrameSetting() {
@@ -111,8 +104,6 @@ private:
 	bool m_publishStepsSetting;
 	bool m_publishStairsSetting;
 
-	float m_cameraHeightAboveGroundSetting;
-
 	int   m_segmentationIterationSetting;
 	float m_segmentationThresholdSetting;
 
@@ -120,7 +111,8 @@ private:
 	float m_minStepHeightSetting;
 	float m_maxStepHeightSetting;
 
-	std::string m_cameraSetting;
+	std::string m_cameraFrameSetting;
+	std::string m_robotFrameSetting;
 	std::string m_worldFrameSetting;
 	std::string m_namespaceSetting;
 

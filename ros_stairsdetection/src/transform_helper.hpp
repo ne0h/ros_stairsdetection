@@ -2,6 +2,7 @@
 #define TRANSFORM_HELPERS_HPP
 
 #include <string>
+#include <ros/ros.h>
 
 #include <geometry_msgs/Point.h>
 #include <tf2_ros/transform_listener.h>
@@ -23,12 +24,22 @@ class TransformHelper {
 public:
 
 	/**
+	 * Default constructor.
+	 */
+	TransformHelper() {}
+
+	/**
 	 * Creates a new TransformHelper.
 	 * @param cameraSetting the ROS topic for the camera frame
 	 * @param worldFrameSetting the ROS topic for the world frame
 	 */
-	TransformHelper(std::string cameraSetting, std::string worldFrameSetting)
-			: m_cameraSetting(cameraSetting), m_worldFrameSetting(worldFrameSetting) {}
+	TransformHelper(std::string cameraFrameSetting, std::string robotFrameSetting, std::string worldFrameSetting,
+		tf2_ros::Buffer *tfBuffer)
+			: m_cameraFrameSetting(cameraFrameSetting), m_robotFrameSetting(robotFrameSetting),
+				m_worldFrameSetting(worldFrameSetting) {
+		
+		m_tfBuffer = tfBuffer;
+	}
 
 	/**
 	 * Default destructor.
@@ -46,25 +57,62 @@ public:
 	 * Transforms the coordinates of Stairs into world coordinates.
 	 * @param stairs the input stairs
 	 */
-	void transformStairsToWorldCoordinates(Stairway &stairway);
+	void transformToWorldCoordinates(Stairway &stairway) {
+		for (std::vector<Plane>::iterator it = stairway.getSteps().begin(); it != stairway.getSteps().end(); it++) {
+			transformToWorldCoordinates(*it);
+		}
+	}
 
 	/**
 	 * Transforms the coordinates of a PCL point into world coordinates.
 	 * @param p the input Point
 	 */
-	bool transformToWorldCoordinates(pcl::PointXYZ &point);
+	bool transformToWorldCoordinates(pcl::PointXYZ &point) {
+		geometry_msgs::Point tmp;
+		transformPCLPointToROSPoint(point, tmp);
+		if (!transformToWorldCoordinates(tmp)) {
+			return false;
+		}
+		transformROSPointToPCLPoint(tmp, point);
+		return true;
+	}
 
 	/**
 	 * Transforms the coordinates of a ROS point to world coordinates.
 	 * @param point the input point
 	 */
-	bool transformToWorldCoordinates(geometry_msgs::Point &point);
+	bool transformToWorldCoordinates(geometry_msgs::Point &point) {
+		return transform(point, m_worldFrameSetting, m_robotFrameSetting);
+	}
 
 	/**
 	 * Transforms the coordinates of a Plane to world coordinates
 	 * @param plane the input Plane
 	 */
 	bool transformToWorldCoordinates(Plane &plane);
+
+	bool transformToRobotCoordinates(geometry_msgs::Point &point) {
+		return transform(point, m_robotFrameSetting, m_cameraFrameSetting);
+	}
+
+	bool transformToRobotCoordinates(pcl::PointXYZ &point) {
+		geometry_msgs::Point tmp;
+		transformPCLPointToROSPoint(point, tmp);
+		if (!transformToRobotCoordinates(tmp)) {
+			return false;
+		}
+		transformROSPointToPCLPoint(tmp, point);
+		return true;
+	}
+
+	bool transformToRobotCoordinates(Plane &plane) {
+		pcl::PointXYZ newMin = plane.getMin(), newMax = plane.getMax();
+		if (transformToRobotCoordinates(newMin) || transformToRobotCoordinates(newMax)) {
+			return false;
+		}
+		plane.setMinMax(newMin, newMax);
+		return true;
+	}
 
 	/**
 	 * Transforms a point from PCL coordinate system to ROS coordinate system.
@@ -90,14 +138,18 @@ public:
 	 * @param point the ROS point to transform
 	 * @return True if the transformation has been successful
 	 */
-	bool transformToBaseLinkCoordinates(geometry_msgs::Point &point);
+	//bool transformToBaseLinkCoordinates(geometry_msgs::Point &point);
 
 	void buildStepFromAABB(Plane &plane, std::vector<pcl::PointXYZ> &points);
 
 private:
-	std::string m_cameraSetting;
+	std::string m_cameraFrameSetting;
+	std::string m_robotFrameSetting;
 	std::string m_worldFrameSetting;
 
+	tf2_ros::Buffer *m_tfBuffer;
+
+	bool transform(geometry_msgs::Point &point, std::string &target_frame, std::string &source_frame);
 };
 
 #endif

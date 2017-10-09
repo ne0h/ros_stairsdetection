@@ -13,39 +13,25 @@ void TransformHelper::getAABB(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, Plane &
 	plane.setMinMax(min, max);
 }
 
-void TransformHelper::transformStairsToWorldCoordinates(Stairway &stairway) {
+bool TransformHelper::transform(geometry_msgs::Point &point, std::string &target_frame, std::string &source_frame) {
 
-	for (std::vector<Plane>::iterator it = stairway.getSteps().begin(); it != stairway.getSteps().end(); it++) {
-		transformToWorldCoordinates(*it);
-	}
-}
-
-bool TransformHelper::transformToWorldCoordinates(pcl::PointXYZ &point) {
-	
-	geometry_msgs::Point tmp;
-	transformPCLPointToROSPoint(point, tmp);
-	if (!transformToWorldCoordinates(tmp)) {
+	// Make sure that the transform buffer is not NULL
+	if (m_tfBuffer == NULL) {
+		ROS_ERROR("Transformlistener is NULL");
 		return false;
 	}
-	transformROSPointToPCLPoint(tmp, point);
-	return true;
-}
 
-bool TransformHelper::transformToWorldCoordinates(geometry_msgs::Point &point) {
-
-	tf2_ros::Buffer tfBuffer;
-	tf2_ros::TransformListener tfListener(tfBuffer);
 	geometry_msgs::TransformStamped ts;
 	try {
-		ts = tfBuffer.lookupTransform(m_cameraSetting.c_str(), m_worldFrameSetting.c_str(), ros::Time(0));
+		ts = m_tfBuffer->lookupTransform(target_frame.c_str(), source_frame.c_str(), ros::Time(0));
 	} catch (tf2::TransformException &ex) {
-		ROS_WARN("Failed to transform to world coordinates. World frame id is '%s':", m_worldFrameSetting.c_str());
+		ROS_WARN("Failed to transform '%s' -> '%s'", target_frame.c_str(), source_frame.c_str());
 		ROS_WARN("%s", ex.what());
 		return false;
 	}
 
 	point.x = point.x + ts.transform.translation.x;
-	point.y = point.y + ts.transform.translation.z;
+	point.y = point.y + ts.transform.translation.y;
 	point.z = point.z + ts.transform.translation.z;
 
 	return true;
@@ -74,7 +60,7 @@ void TransformHelper::transformROSPointToPCLPoint(geometry_msgs::Point &input, p
 	output.z = input.x;
 }
 
-bool TransformHelper::transformToBaseLinkCoordinates(geometry_msgs::Point &point) {
+/*bool TransformHelper::transformToBaseLinkCoordinates(geometry_msgs::Point &point) {
 
 	tf2_ros::Buffer tfBuffer;
 	tf2_ros::TransformListener tfListener(tfBuffer);
@@ -88,11 +74,11 @@ bool TransformHelper::transformToBaseLinkCoordinates(geometry_msgs::Point &point
 	}
 
 	point.x = point.x - ts.transform.translation.x;
-	point.y = point.y - ts.transform.translation.z;
+	point.y = point.y - ts.transform.translation.y;
 	point.z = point.z - ts.transform.translation.z;
 
 	return true;
-}
+}*/
 
 void TransformHelper::buildStepFromAABB(Plane &plane, std::vector<pcl::PointXYZ> &points) {
 	points.push_back(plane.getMin());

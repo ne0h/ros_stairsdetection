@@ -120,12 +120,13 @@ public:
 	 * @return a brief, human-readable description of the plane
 	 */
 	std::string toString() {
-		pcl::PointXYZ p = getCenterBottom();
+		//pcl::PointXYZ p = getCenterBottom();
 		std::stringstream ss;
 
+		ss << std::fixed << std::setprecision(3);
 		ss << "Width: " << getWidth() << ", height: " << getHeight();
-		ss << ", height above ground: " << getHeightAboveGround() << "\"                                   ";
-		ss << " at (" << p.x << " | " << p.y << " | " << p.z << ")";
+		ss << ", height above ground: " << getHeightAboveGround();
+		//ss  << " " << " at (" << p.x << " | " << p.y << " | " << p.z << ")";
 
 		return ss.str();
 	}
@@ -142,4 +143,5 @@ public:
 private:
 	pcl::PointXYZ m_min;
 	pcl::PointXYZ m_max;
+
 };

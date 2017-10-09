@@ -31,8 +31,6 @@ void ROSContext::init(int argc, char **argv, void (*callback)(const sensor_msgs:
 	ros::param::get("~publish_steps", m_publishStepsSetting);
 	ros::param::get("~publish_stairs", m_publishStairsSetting);
 
-	ros::param::get("~camera_height_above_ground", m_cameraHeightAboveGroundSetting);
-
 	ros::param::get("~segmentation_iterations", m_segmentationIterationSetting);
 	ros::param::get("~segmentation_threshold", m_segmentationThresholdSetting);
 
@@ -40,11 +38,16 @@ void ROSContext::init(int argc, char **argv, void (*callback)(const sensor_msgs:
 	ros::param::get("~min_step_height", m_minStepHeightSetting);
 	ros::param::get("~max_step_height", m_maxStepHeightSetting);
 
-	ros::param::get("~parent_frame", m_cameraSetting);
+	ros::param::get("~camera_frame", m_cameraFrameSetting);
+	ros::param::get("~robot_frame", m_robotFrameSetting);
 	ros::param::get("~world_frame", m_worldFrameSetting);
 	ros::param::get("~namespace", m_namespaceSetting);
 
 	ros::param::get("~use_sample_data", useSampleDataSetting);
+
+	tf2_ros::Buffer tfBuffer;
+	tf2_ros::TransformListener tfListener(tfBuffer);
+	m_th = TransformHelper(m_cameraFrameSetting, m_robotFrameSetting, m_worldFrameSetting, &tfBuffer);
 
 	/*
 	 * Init subscriber and listener
@@ -79,9 +82,10 @@ void ROSContext::init(int argc, char **argv, void (*callback)(const sensor_msgs:
 	ros::spin();
 }
 
-void ROSContext::buildRosMarkerSteps(visualization_msgs::Marker &marker, std::vector<Plane> &planes, float (&color)[3]) {
+void ROSContext::buildRosMarkerSteps(visualization_msgs::Marker &marker, std::vector<Plane> &planes,
+		float (&color)[3]) {
 
-	marker.header.frame_id = m_cameraSetting.c_str();
+	marker.header.frame_id = m_cameraFrameSetting.c_str();
 	marker.header.stamp = ros::Time::now();
 	marker.ns = m_namespaceSetting.c_str();
 	marker.id = 0;
@@ -122,8 +126,7 @@ void ROSContext::buildRosMarkerSteps(visualization_msgs::Marker &marker, std::ve
 		marker.points.push_back(p4);
 		marker.points.push_back(p1);
 
-		ROS_INFO("Width: %f | Height: %f | Height above zero: %f", it->getWidth(), it->getHeight(),
-				it->getHeightAboveGround());
+		ROS_INFO("%s", it->toString().c_str());
 	}
 }
 
