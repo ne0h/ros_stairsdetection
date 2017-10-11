@@ -163,7 +163,6 @@ void ROSContext::publishStairways(std::vector<Stairway> &stairway) {
 
 	//
 	for (std::vector<Stairway>::iterator it = stairway.begin(); it != stairway.end(); it++) {
-		ROS_INFO("!!!!!!!!!!!!!!!!!");
 		visualization_msgs::Marker marker;
 		float color[3];
 		color[0] = color[2] = 0.f;

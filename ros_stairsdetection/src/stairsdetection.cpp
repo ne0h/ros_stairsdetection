@@ -166,7 +166,8 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &input) {
 		}
 	}
 
-	// Repeat adding steps to the stairways until no further step is added to one stairway
+	// Look for further steps:
+	// Repeat adding steps to the stairways until there are no more addable steps
 	for (vector<Plane>::iterator it = planes.begin(); it != planes.end();) {
 		
 		// Does this step belong to a stairway that has already been found?
@@ -174,7 +175,11 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &input) {
 		bool found = false;
 		for (vector<Stairway>::iterator jt = stairways.begin(); jt != stairways.end(); jt++) {
 			if (isNextStep(*jt, *it)) {
-				// Remove from steps list
+
+				// Add step to stairway
+				jt->getSteps().push_back(*it);
+
+				// Remove step from steps list
 				it = planes.erase(it);
 
 				found = true;
@@ -192,7 +197,7 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &input) {
 	 */
 	if (rc.getPublishStairwaysSetting()) {
 		rc.publishStairways(stairways);
-		ROS_INFO("$$$ Published %d stairways", (int) stairways.size());
+		ROS_INFO("Published %d stairways", (int) stairways.size());
 	}
 
 	// look for more steps
@@ -241,23 +246,25 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &input) {
 }
 
 bool alreadyKnown(Stairway &stairway) {
-
-
-
 	return false;
 }
 
 bool isStartingStep(Plane &plane) {
-	return (plane.getMax().y > rc.getMinStepHeightSetting() && plane.getMax().y < rc.getMaxStepHeightSetting());
+	const double top = plane.getMax().z;
+	return (top > rc.getMinStepHeightSetting() && top < rc.getMaxStepHeightSetting());
 }
 
 bool isNextStep(Stairway &stairway, Plane &plane) {
+	const double 	curTop = stairway.getSteps().back().getMax().z,
+					newMin = plane.getMax().z - 0.05,
+					newMax = plane.getMax().z + 0.05;
+	
 	return (
 		// plane at least more than the minimum step height higher than the last step of the stairway
-		plane.getMax().y > stairway.getSteps().back().getMin().y + 0.08
+		curTop + 0.17 > newMin
 
 		// Plane ist not more than the maximum step height higher than the last step of the stairway
-		&& plane.getMax().y < stairway.getSteps().back().getMin().y + 0.28
+		&& curTop + 0.17 < newMax
 	);
 }
 
