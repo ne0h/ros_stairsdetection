@@ -4,6 +4,7 @@
 #include <fstream>
 #include <sstream>
 #include <iostream>
+#include <algorithm>
 
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
@@ -26,11 +27,17 @@
 
 using namespace std;
 
-//bool stairsAlreadyKnown(struct Stairs *stairs);
+// forward declarations
+bool isStartingStep(Plane &plane);
 bool isNextStep(Stairway &stairway, Plane &plane);
+bool alreadyKnown(Stairway &stairway);
 
 vector<Stairway> stairways;
 ROSContext rc;
+
+bool sortPlanes(Plane a, Plane b) {
+	return (a.getMin().x < b.getMin().x);
+}
 
 void callback(const sensor_msgs::PointCloud2ConstPtr &input) {
 	ROS_INFO("=================================================================");
@@ -46,7 +53,7 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &input) {
 
 	pcl::VoxelGrid<pcl::PCLPointCloud2> sor;
 	sor.setInputCloud(unfilteredCloudPtr);
-	sor.setLeafSize(0.01f, 0.01f, 0.01f);
+	sor.setLeafSize(0.02f, 0.02f, 0.02f);								// default: sor.setLeafSize(0.01f, 0.01f, 0.01f);
 	sor.filter(*filteredCloud);
 
 	// convert to pointcloud
@@ -72,7 +79,7 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &input) {
 
 	vector<Plane> planes;
 
-	// Extract a model and repeat while 1% of the original cloud is still present
+	// Extract a model and repeat while 10% of the original cloud is still present
 	while (cloud->points.size() > 0.1 * pointsAtStart) {
 		id++;
 
@@ -94,22 +101,24 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &input) {
 		extract.filter(*cloud2);
 		cloud.swap(cloud2);
 
-		// calculate AABB and add to planes list
+		// calculate AABB and transform to world coordinates
+		// PCL points are automatically transformed to ROS points while calculating AABB
 		Plane plane;
 		rc.getTransformHelper().getAABB(cloud1, plane);
-		rc.getTransformHelper().transformToWorldCoordinates(plane);
-
-		// Remove planes with less than 5cm or more than 40cm and remove rectangles with  a width of less than 30cm
-		if (plane.getHeight() > rc.getMaxStepHeightSetting() || plane.getHeight() < rc.getMinStepHeightSetting()
-				|| plane.getWidth() > rc.getMaxStepWidthSetting()) {
-
-			continue;
-		}
+		rc.getTransformHelper().transformToRobotCoordinates(plane);
 
 		planes.push_back(plane);
-		ROS_DEBUG("Plane: %s", plane.toString().c_str());
 	}
 
+	/**
+	 * Order planes by distance and print
+	 */
+	std::sort(planes.begin(), planes.end(), sortPlanes);
+	print(planes);
+
+	/**
+	 * Publish steps?
+	 */
 	if (rc.getPublishStepsSetting()) {
 		ROS_INFO("-----------------------------------------------------------------");
 		ROS_INFO("Publishing %d step(s):", (int) planes.size());
@@ -117,6 +126,14 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &input) {
 		rc.publishSteps(planes);
 	}
 
+	/**
+	 * Not looking for stairways -> return!
+	 */
+	if (!rc.getPublishStairwaysSetting()) {
+		return;
+	}
+
+	stairways.clear();
 	/*
 	 * Try to build (multiple) stairways out of the steps
 	 */
@@ -124,16 +141,23 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &input) {
 	ROS_INFO("-----------------------------------------------------------------");
 
 	// Look for starting steps.
-	// Every new starting step starts a new stairway -> all starting steps are erased from the global steps list
+	// Every new starting step starts a new stairway and is erased from the list
 	for (vector<Plane>::iterator it = planes.begin(); it != planes.end();) {
 
-		if (it->getMin().y < 0.05) {
-			ROS_INFO("Found starting step: creating new stairway...");
+		if (isStartingStep(*it)) {
+			ROS_INFO("Found starting step: %s", it->toString().c_str());
 
 			// Create stairway and add this step to the newly created stairway
 			Stairway s;
 			s.getSteps().push_back(*it);
-			stairways.push_back(s);
+
+			// Stairway already known?
+			// only add to global list if not
+			if (!alreadyKnown(s)) {
+				stairways.push_back(s);
+
+
+			}
 
 			// Remove from steps list
 			it = planes.erase(it);
@@ -145,13 +169,30 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &input) {
 	// Repeat adding steps to the stairways until no further step is added to one stairway
 	for (vector<Plane>::iterator it = planes.begin(); it != planes.end();) {
 		
-		// Does this step belong to a stairway that has been already found?
+		// Does this step belong to a stairway that has already been found?
 		// Iterate stairways...
+		bool found = false;
 		for (vector<Stairway>::iterator jt = stairways.begin(); jt != stairways.end(); jt++) {
 			if (isNextStep(*jt, *it)) {
-				
+				// Remove from steps list
+				it = planes.erase(it);
+
+				found = true;
+				break;
 			}
 		}
+
+		if (!found) {
+			++it;
+		}
+	}
+
+	/**
+	 * Publish stairways?
+	 */
+	if (rc.getPublishStairwaysSetting()) {
+		rc.publishStairways(stairways);
+		ROS_INFO("$$$ Published %d stairways", (int) stairways.size());
 	}
 
 	// look for more steps
@@ -199,30 +240,31 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &input) {
 	}*/
 }
 
-bool isNextStep(Stairway &stairway, Plane &plane) {
-	return (plane.getMax().y - stairway.getSteps().back().getMin().y < 0.08);
-}
+bool alreadyKnown(Stairway &stairway) {
 
-/*bool stairsAlreadyKnown(struct Stairs *stairs) {
-	for (vector<struct Stairs>::iterator it = global_stairs.begin(); it != global_stairs.end(); it++) {
-		const float tolerance = 0.1f;
-		if (	   fabs((it->steps.at(0).getMin().x - stairs->steps.at(0).getMin().x) > tolerance
-				&& fabs((it->steps.at(0).getMin().y - stairs->steps.at(0).getMin().y) > tolerance
-				&& fabs((it->steps.at(0).getMin().z - stairs->steps.at(0).getMin().z) > tolerance
-				&& fabs((it->steps.at(0).getMax().x - stairs->steps.at(0).getMax().x) > tolerance
-				&& fabs((it->steps.at(0).getMax().y - stairs->steps.at(0).getMax().y) > tolerance
-				&& fabs((it->steps.at(0).getMax().z - stairs->steps.at(0).getMax().z) > tolerance) {
-			return true;
-		}
-	}
+
 
 	return false;
-}*/
+}
+
+bool isStartingStep(Plane &plane) {
+	return (plane.getMax().y > rc.getMinStepHeightSetting() && plane.getMax().y < rc.getMaxStepHeightSetting());
+}
+
+bool isNextStep(Stairway &stairway, Plane &plane) {
+	return (
+		// plane at least more than the minimum step height higher than the last step of the stairway
+		plane.getMax().y > stairway.getSteps().back().getMin().y + 0.08
+
+		// Plane ist not more than the maximum step height higher than the last step of the stairway
+		&& plane.getMax().y < stairway.getSteps().back().getMin().y + 0.28
+	);
+}
 
 bool exportStairs(ros_stairsdetection::ExportStairs::Request &req,
 		ros_stairsdetection::ExportStairs::Response &res) {
 
-	YAML::Node stairsNode;
+	/*YAML::Node stairsNode;
 
 	// traverse located stairs
 	for (vector<Stairway>::iterator it = stairways.begin(); it != stairways.end(); it++) {
@@ -267,13 +309,13 @@ bool exportStairs(ros_stairsdetection::ExportStairs::Request &req,
 	const string path = req.path;
 	ofstream fout(path.c_str());
 	fout << stairsNode << '\n';
-	res.result = "Written succesfully to " + path + ".";
+	res.result = "Written succesfully to " + path + ".";*/
 	return true;
 }
 
 bool importStairs(ros_stairsdetection::ImportStairs::Request &req,
 		ros_stairsdetection::ImportStairs::Response &res) {
-
+/*
 	// clear current data
 	stairways.clear();
 
@@ -287,44 +329,38 @@ bool importStairs(ros_stairsdetection::ImportStairs::Request &req,
 			ostringstream convert;
 			convert << "s" << i;
 
-			geometry_msgs::Point p1ROS;
-			p1ROS.x = (*it)[convert.str()]["p1"]["x"].as<double>();
-			p1ROS.y = (*it)[convert.str()]["p1"]["y"].as<double>();
-			p1ROS.z = (*it)[convert.str()]["p1"]["z"].as<double>();
-			rc.getTransformHelper().transformToBaseLinkCoordinates(p1ROS);
-			pcl::PointXYZ p1PCL;
-			rc.getTransformHelper().transformROSPointToPCLPoint(p1ROS, p1PCL);
+			geometry_msgs::Point p1;
+			p1.x = (*it)[convert.str()]["p1"]["x"].as<double>();
+			p1.y = (*it)[convert.str()]["p1"]["y"].as<double>();
+			p1.z = (*it)[convert.str()]["p1"]["z"].as<double>();
 
-			geometry_msgs::Point p3ROS;
-			p3ROS.x = (*it)[convert.str()]["p3"]["x"].as<double>();
-			p3ROS.y = (*it)[convert.str()]["p3"]["y"].as<double>();
-			p3ROS.z = (*it)[convert.str()]["p3"]["z"].as<double>();
-			rc.getTransformHelper().transformToBaseLinkCoordinates(p3ROS);
-			pcl::PointXYZ p3PCL;
-			rc.getTransformHelper().transformROSPointToPCLPoint(p3ROS, p3PCL);
+			geometry_msgs::Point p3;
+			p3.x = (*it)[convert.str()]["p3"]["x"].as<double>();
+			p3.y = (*it)[convert.str()]["p3"]["y"].as<double>();
+			p3.z = (*it)[convert.str()]["p3"]["z"].as<double>();
 
-			Plane step(p1PCL, p3PCL);
+			Plane step(p1, p3);
 			stairway.getSteps().push_back(step);
 		}
 
 		stairways.push_back(stairway);
 	}
 
-	rc.publishStairs(stairways);
-	res.result = "Seems like the import has worked.";
-	return true;
+	rc.publishStairways(stairways);
+	res.result = "Looks like the import has worked.";
+	return true;*/
 }
 
 bool clearStairs(ros_stairsdetection::ClearStairs::Request &req, ros_stairsdetection::ClearStairs::Response &res) {
 	stairways.clear();
-	rc.publishStairs(stairways);
+	rc.publishStairways(stairways);
 	return true;
 }
 
 int main(int argc, char **argv) {
 
 	ROS_INFO("Starting up...");
-	rc.init(argc, argv, &callback, &exportStairs, &importStairs, &clearStairs, &stairways);
+	rc.init(argc, argv, &callback, &exportStairs, &importStairs, &clearStairs);
 	ROS_INFO("Initiated ROSContext successfully.");
 
 	return 0;

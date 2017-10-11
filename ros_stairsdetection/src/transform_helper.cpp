@@ -2,6 +2,7 @@
 
 #include "transform_helper.hpp"
 #include "plane.hpp"
+#include "print_helpers.hpp"
 
 void TransformHelper::getAABB(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, Plane &plane) {
 	pcl::MomentOfInertiaEstimation<pcl::PointXYZ> feature_extractor;
@@ -10,7 +11,13 @@ void TransformHelper::getAABB(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, Plane &
 
 	pcl::PointXYZ min, max;
 	feature_extractor.getAABB(min, max);
-	plane.setMinMax(min, max);
+
+	// transform PCL points to ROS points
+	geometry_msgs::Point min_r, max_r;
+	transformPCLPointToROSPoint(min, min_r);
+	transformPCLPointToROSPoint(max, max_r);
+
+	plane.setMinMax(max_r, min_r);
 }
 
 bool TransformHelper::transform(geometry_msgs::Point &point, std::string &target_frame, std::string &source_frame) {
@@ -38,9 +45,8 @@ bool TransformHelper::transform(geometry_msgs::Point &point, std::string &target
 }
 
 bool TransformHelper::transformToWorldCoordinates(Plane &plane) {
-
-	pcl::PointXYZ min = plane.getMin();
-	pcl::PointXYZ max = plane.getMax();
+	geometry_msgs::Point min = plane.getMin();
+	geometry_msgs::Point max = plane.getMax();
 	transformToWorldCoordinates(min);
 	transformToWorldCoordinates(max);
 
@@ -50,39 +56,41 @@ bool TransformHelper::transformToWorldCoordinates(Plane &plane) {
 
 void TransformHelper::transformPCLPointToROSPoint(pcl::PointXYZ &input, geometry_msgs::Point &output) {
 	output.x = input.z;
-	output.y = input.x * (-1.f);
+	output.y = input.x;
 	output.z = input.y * (-1.f);
 }
 
-void TransformHelper::transformROSPointToPCLPoint(geometry_msgs::Point &input, pcl::PointXYZ &output) {
-	output.x = input.y * (-1.f);
-	output.y = input.z * (-1.f);
-	output.z = input.x;
-}
+/*
+ * Get vertices of the rectangle
+ *
+ *  p2-----------------p3
+ *  |                   |
+ *  |                   |
+ *  p1-----------------p4
+ *
+ */
+void TransformHelper::buildStepFromAABB(Plane &plane, std::vector<geometry_msgs::Point> &points) {
 
-/*bool TransformHelper::transformToBaseLinkCoordinates(geometry_msgs::Point &point) {
-
-	tf2_ros::Buffer tfBuffer;
-	tf2_ros::TransformListener tfListener(tfBuffer);
-	geometry_msgs::TransformStamped ts;
-	try {
-		ts = tfBuffer.lookupTransform(m_cameraSetting.c_str(), m_worldFrameSetting.c_str(), ros::Time(0));
-	} catch (tf2::TransformException &ex) {
-		ROS_WARN("Failed to transform to world coordinates. World frame id is %s", m_worldFrameSetting.c_str());
-		ROS_WARN("%s", ex.what());
-		return false;
-	}
-
-	point.x = point.x - ts.transform.translation.x;
-	point.y = point.y - ts.transform.translation.y;
-	point.z = point.z - ts.transform.translation.z;
-
-	return true;
-}*/
-
-void TransformHelper::buildStepFromAABB(Plane &plane, std::vector<pcl::PointXYZ> &points) {
+	// p1
 	points.push_back(plane.getMin());
-	points.push_back(pcl::PointXYZ(plane.getMin().x, plane.getMax().y, plane.getMin().z));
+
+	// p2
+	geometry_msgs::Point p2;
+	p2.x = plane.getMin().x;
+	p2.y = plane.getMax().y;
+	p2.z = plane.getMin().z;
+	points.push_back(p2);
+
+	// p3
 	points.push_back(plane.getMax());
-	points.push_back(pcl::PointXYZ(plane.getMax().x, plane.getMin().y, plane.getMax().z));
+
+	// p4
+	geometry_msgs::Point p4;
+	p4.x = plane.getMax().x;
+	p4.y = plane.getMin().y;
+	p4.z = plane.getMax().z;
+	points.push_back(p4);
+
+	geometry_msgs::Point p1 = plane.getMin();
+	geometry_msgs::Point p3 = plane.getMax();
 }

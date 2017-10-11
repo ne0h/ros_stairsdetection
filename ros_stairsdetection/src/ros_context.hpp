@@ -1,5 +1,4 @@
-#ifndef ROS_CONTEXT_HPP
-#define ROS_CONTEXT_HPP
+#pragma once
 
 #include <vector>
 #include <string>
@@ -33,7 +32,7 @@ void buildStepFromAABB(Plane *plane, std::vector<pcl::PointXYZ> *points);
 void buildRosMarkerSteps(visualization_msgs::Marker *marker, std::vector<Plane> *planes, float *color,
 		std::string cameraSetting, std::string namespaceSetting, std::string cameraHeightAboveGroundSetting);
 
-void buildROSMarkerStairs(visualization_msgs::Marker *marker, struct Stairs *stairs, float *color);
+void buildROSMarkerStaiways(visualization_msgs::Marker *marker, struct Stairs *stairs, float *color);
 
 void showStairsInRVIZ(std::vector<struct Stairs> *stairs);*/
 
@@ -46,15 +45,14 @@ public:
 		bool (*importStairs)(ros_stairsdetection::ImportStairs::Request&,
 			ros_stairsdetection::ImportStairs::Response&),
 		bool (*clearStairs)(ros_stairsdetection::ClearStairs::Request&,
-			ros_stairsdetection::ClearStairs::Response&),
-		std::vector<Stairway> *global_stairs);
+			ros_stairsdetection::ClearStairs::Response&));
 
 	bool getPublishStepsSetting() {
 		return m_publishStepsSetting;
 	}
 
-	bool getPublishStairsSetting() {
-		return m_publishStairsSetting;
+	bool getPublishStairwaysSetting() {
+		return m_publishStairwaysSetting;
 	}
 
 	float getMaxStepWidthSetting() {
@@ -91,18 +89,18 @@ public:
 
 	void publishSteps(std::vector<Plane> &planes);
 
-	void publishStairs(std::vector<Stairway> &stairway);
+	void publishStairways(std::vector<Stairway> &stairway);
 
 private:
 	ros::Publisher m_pubSteps;
-	ros::Publisher m_pubStairs;
+	ros::Publisher m_pubStairways;
 
 	ros::ServiceServer m_exportService;
 	ros::ServiceServer m_importService;
 	ros::ServiceServer m_clearService;
 
 	bool m_publishStepsSetting;
-	bool m_publishStairsSetting;
+	bool m_publishStairwaysSetting;
 
 	int   m_segmentationIterationSetting;
 	float m_segmentationThresholdSetting;
@@ -120,7 +118,5 @@ private:
 
 	void buildRosMarkerSteps(visualization_msgs::Marker &marker, std::vector<Plane> &planes, float (&color)[3]);
 
-	void buildROSMarkerStairs(visualization_msgs::Marker &marker, Stairway &stairway, float (&color)[3]);
+	//void buildROSMarkerStairways(visualization_msgs::Marker &marker, Stairway &stairway, float (&color)[3]);
 };
-
-#endif

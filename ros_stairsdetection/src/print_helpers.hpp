@@ -1,18 +1,18 @@
-#ifndef PRINT_HELPERS_HPP
-#define PRINT_HELPERS_HPP
+#pragma once
+
+#include <vector>
 
 #include <geometry_msgs/Point.h>
 
 #include "plane.hpp"
+#include "stairway.hpp"
 
-void printROSPoint(geometry_msgs::Point *p);
+void print(Plane &plane);
 
-void printPlane(Plane *plane);
+void print(std::vector<Plane> &planes);
 
-void printStairs(struct Stairs *stairs);
+void print(Stairway &stairway);
 
-void printStairs(std::vector<struct Stairs> *stairs);
+void print(std::vector<Stairway> &stairways);
 
-void printPoint(pcl::PointXYZ *p);
-
-#endif
+void print(geometry_msgs::Point &p);

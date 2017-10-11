@@ -4,14 +4,13 @@
 	<node name="stairsdetection" pkg="ros_stairsdetection" type="stairsdetection" output="screen">
 		<param name="input" value="/camera/depth/points" />
 		<param name="steps" value="/hmmwv/steps" />
-		<param name="stairs" value="/hmmwv/stairs" />
+		<param name="stairways" value="/hmmwv/stairways" />
 		<param name="camera_frame" value="camera_link" />
 		<param name="robot_frame" value="base_link" />
 		<param name="world_frame" value="map" />
 		<param name="namespace" value="hmmwv" />
 		<param name="publish_steps" value="true" />
-		<param name="publish_stairway" value="true" />
-		<param name="use_sample_data" value="false" />
+		<param name="publish_stairways" value="true" />
 
 		<param name="segmentation_iterations" value="1000" />
 		<param name="segmentation_threshold" value="0.01" />

@@ -1,5 +1,4 @@
-#ifndef TRANSFORM_HELPERS_HPP
-#define TRANSFORM_HELPERS_HPP
+#pragma once
 
 #include <string>
 #include <ros/ros.h>
@@ -64,20 +63,6 @@ public:
 	}
 
 	/**
-	 * Transforms the coordinates of a PCL point into world coordinates.
-	 * @param p the input Point
-	 */
-	bool transformToWorldCoordinates(pcl::PointXYZ &point) {
-		geometry_msgs::Point tmp;
-		transformPCLPointToROSPoint(point, tmp);
-		if (!transformToWorldCoordinates(tmp)) {
-			return false;
-		}
-		transformROSPointToPCLPoint(tmp, point);
-		return true;
-	}
-
-	/**
 	 * Transforms the coordinates of a ROS point to world coordinates.
 	 * @param point the input point
 	 */
@@ -95,21 +80,12 @@ public:
 		return transform(point, m_robotFrameSetting, m_cameraFrameSetting);
 	}
 
-	bool transformToRobotCoordinates(pcl::PointXYZ &point) {
-		geometry_msgs::Point tmp;
-		transformPCLPointToROSPoint(point, tmp);
-		if (!transformToRobotCoordinates(tmp)) {
-			return false;
-		}
-		transformROSPointToPCLPoint(tmp, point);
-		return true;
-	}
-
 	bool transformToRobotCoordinates(Plane &plane) {
-		pcl::PointXYZ newMin = plane.getMin(), newMax = plane.getMax();
-		if (transformToRobotCoordinates(newMin) || transformToRobotCoordinates(newMax)) {
+		geometry_msgs::Point newMin = plane.getMin(), newMax = plane.getMax();
+		if ((!transformToRobotCoordinates(newMin)) || (!transformToRobotCoordinates(newMax))) {
 			return false;
 		}
+
 		plane.setMinMax(newMin, newMax);
 		return true;
 	}
@@ -123,24 +99,13 @@ public:
 	void transformPCLPointToROSPoint(pcl::PointXYZ &input, geometry_msgs::Point &output);
 
 	/**
-	 * Transforms a point from ROS coordinate system to PCL coordinate system.
-	 *
-	 * Documentation:
-	 * ROS: http://wiki.ros.org/geometry/CoordinateFrameConventions
-	 *
-	 * @param input the input ROS point
-	 * @param output the output PCL point 
-	 */
-	void transformROSPointToPCLPoint(geometry_msgs::Point &input, pcl::PointXYZ &output);
-
-	/**
 	 * Transforms the coorindates of a ROS point to world coordinates.
 	 * @param point the ROS point to transform
 	 * @return True if the transformation has been successful
 	 */
 	//bool transformToBaseLinkCoordinates(geometry_msgs::Point &point);
 
-	void buildStepFromAABB(Plane &plane, std::vector<pcl::PointXYZ> &points);
+	void buildStepFromAABB(Plane &plane, std::vector<geometry_msgs::Point> &points);
 
 private:
 	std::string m_cameraFrameSetting;
@@ -151,5 +116,3 @@ private:
 
 	bool transform(geometry_msgs::Point &point, std::string &target_frame, std::string &source_frame);
 };
-
-#endif
