@@ -20,7 +20,8 @@ void TransformHelper::getAABB(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, Plane &
 	plane.setMinMax(max_r, min_r);
 }
 
-bool TransformHelper::transform(geometry_msgs::Point &point, std::string &target_frame, std::string &source_frame) {
+bool TransformHelper::transform(geometry_msgs::Point &point, std::string &target_frame, std::string &source_frame,
+		float factor) {
 
 	// Make sure that the transform buffer is not NULL
 	if (m_tfBuffer == NULL) {
@@ -37,9 +38,9 @@ bool TransformHelper::transform(geometry_msgs::Point &point, std::string &target
 		return false;
 	}
 
-	point.x = point.x + ts.transform.translation.x;
-	point.y = point.y + ts.transform.translation.y;
-	point.z = point.z + ts.transform.translation.z;
+	point.x = point.x + ts.transform.translation.x * factor;
+	point.y = point.y + ts.transform.translation.y * factor;
+	point.z = point.z + ts.transform.translation.z * factor;
 
 	return true;
 }

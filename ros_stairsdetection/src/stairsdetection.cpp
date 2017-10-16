@@ -123,7 +123,9 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &input) {
 		ROS_INFO("-----------------------------------------------------------------");
 		ROS_INFO("Publishing %d step(s):", (int) planes.size());
 
-		rc.publishSteps(planes);
+		std::vector<Plane> out = planes;
+		rc.getTransformHelper().transformToWorldCoordinates(out);
+		rc.publishSteps(out);
 	}
 
 	/**
@@ -196,53 +198,10 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &input) {
 	 * Publish stairways?
 	 */
 	if (rc.getPublishStairwaysSetting()) {
+		rc.getTransformHelper().transformToWorldCoordinates(stairways);
 		rc.publishStairways(stairways);
 		ROS_INFO("Published %d stairways", (int) stairways.size());
 	}
-
-	// look for more steps
-	/*if (stairs.steps.size() > 0) {
-		bool somethingChanged = false;
-		unsigned int stepCounter = 0;
-		while (planes.size() > 0) {
-
-			// look for new steps
-			vector<int> removeElements;
-			unsigned int i = 0;
-			for (vector<struct Plane>::iterator it = planes.begin(); it != planes.end(); it++) {
-				if (fabs((*it).getMin().y - stairs.steps.at(stepCounter).getMax().y) < 0.08) {
-					stairs.steps.push_back((*it));
-					somethingChanged = true;
-					removeElements.push_back(i);
-					stepCounter++;
-					break;
-				}
-
-				i++;
-			}
-
-			for (unsigned int i = 0; i < removeElements.size(); i++) {
-				planes.erase(planes.begin() + removeElements.at(i));
-			}
-
-			// check if there is something new in this iteration
-			if (!somethingChanged) {
-				break;
-			}
-
-			somethingChanged = false;
-		}	
-	}*/
-
-	// transform to world coordinates
-	/*transformStairsToWorldCoordinates(&stairs, rc.getCameraSetting(), rc.getWorldFrameSetting());
-
-	// check if this stairs is already known
-	if (!stairsAlreadyKnown(&stairs) && stairs.steps.size() > 0) {
-		ROS_INFO("New stairs pubslished");
-		global_stairs.push_back(stairs);
-		rc.publishStairs(&global_stairs);
-	}*/
 }
 
 bool alreadyKnown(Stairway &stairway) {

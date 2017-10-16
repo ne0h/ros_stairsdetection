@@ -63,11 +63,21 @@ public:
 	}
 
 	/**
+	 * Transforms the coordinates of a list of stairways to world coordinates
+	 * @param stairways a list of stairways
+	 */
+	void transformToWorldCoordinates(std::vector<Stairway> &stairways) {
+		for (std::vector<Stairway>::iterator it = stairways.begin(); it != stairways.end(); it++) {
+			transformToWorldCoordinates(*it);
+		}
+	}
+
+	/**
 	 * Transforms the coordinates of a ROS point to world coordinates.
 	 * @param point the input point
 	 */
 	bool transformToWorldCoordinates(geometry_msgs::Point &point) {
-		return transform(point, m_worldFrameSetting, m_robotFrameSetting);
+		return transform(point, m_robotFrameSetting, m_cameraFrameSetting, -1.f);
 	}
 
 	/**
@@ -76,8 +86,18 @@ public:
 	 */
 	bool transformToWorldCoordinates(Plane &plane);
 
+	/**
+	 * Transforms a list of planes to world coordinates.
+	 * @param planes the planes to transform
+	 */
+	bool transformToWorldCoordinates(std::vector<Plane> &planes) {
+		for (std::vector<Plane>::iterator it = planes.begin(); it != planes.end(); it++) {
+			transformToWorldCoordinates(*it);
+		}
+	}
+
 	bool transformToRobotCoordinates(geometry_msgs::Point &point) {
-		return transform(point, m_robotFrameSetting, m_cameraFrameSetting);
+		return transform(point, m_robotFrameSetting, m_cameraFrameSetting, 1.f);
 	}
 
 	bool transformToRobotCoordinates(Plane &plane) {
@@ -114,5 +134,5 @@ private:
 
 	tf2_ros::Buffer *m_tfBuffer;
 
-	bool transform(geometry_msgs::Point &point, std::string &target_frame, std::string &source_frame);
+	bool transform(geometry_msgs::Point &point, std::string &target_frame, std::string &source_frame, float factor);
 };
