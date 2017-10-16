@@ -170,27 +170,36 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &input) {
 
 	// Look for further steps:
 	// Repeat adding steps to the stairways until there are no more addable steps
-	for (vector<Plane>::iterator it = planes.begin(); it != planes.end();) {
-		
-		// Does this step belong to a stairway that has already been found?
-		// Iterate stairways...
-		bool found = false;
-		for (vector<Stairway>::iterator jt = stairways.begin(); jt != stairways.end(); jt++) {
-			if (isNextStep(*jt, *it)) {
+	while (true) {
+		bool found_global = false;
 
-				// Add step to stairway
-				jt->getSteps().push_back(*it);
+		for (vector<Plane>::iterator it = planes.begin(); it != planes.end();) {
+			
+			// Does this step belong to a stairway that has already been found?
+			// Iterate stairways...
+			bool found = false;
+			for (vector<Stairway>::iterator jt = stairways.begin(); jt != stairways.end(); jt++) {
+				if (isNextStep(*jt, *it)) {
 
-				// Remove step from steps list
-				it = planes.erase(it);
+					// Add step to stairway
+					jt->getSteps().push_back(*it);
 
-				found = true;
-				break;
+					// Remove step from steps list
+					it = planes.erase(it);
+
+					found = true;
+					found_global = true;
+					break;
+				}
+			}
+
+			if (!found) {
+				++it;
 			}
 		}
 
-		if (!found) {
-			++it;
+		if (!found_global) {
+			break;
 		}
 	}
 
