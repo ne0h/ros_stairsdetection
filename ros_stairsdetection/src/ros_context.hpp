@@ -55,15 +55,15 @@ public:
 		return m_publishStairwaysSetting;
 	}
 
-	float getMaxStepWidthSetting() {
-		return m_maxStepWidthSetting;
+	double getMinStepWidthSetting() {
+		return m_minStepWidthSetting;
 	}
 
-	float getMinStepHeightSetting() {
+	double getMinStepHeightSetting() {
 		return m_minStepHeightSetting;
 	}
 
-	float getMaxStepHeightSetting() {
+	double getMaxStepHeightSetting() {
 		return m_maxStepHeightSetting;
 	}
 
@@ -71,7 +71,7 @@ public:
 		return m_segmentationIterationSetting;
 	}
 
-	float getSegmentationThresholdSetting() {
+	double getSegmentationThresholdSetting() {
 		return m_segmentationThresholdSetting;
 	}
 
@@ -102,12 +102,12 @@ private:
 	bool m_publishStepsSetting;
 	bool m_publishStairwaysSetting;
 
-	int   m_segmentationIterationSetting;
-	float m_segmentationThresholdSetting;
+	int    m_segmentationIterationSetting;
+	double m_segmentationThresholdSetting;
 
-	float m_maxStepWidthSetting;
-	float m_minStepHeightSetting;
-	float m_maxStepHeightSetting;
+	double m_minStepWidthSetting;
+	double m_minStepHeightSetting;
+	double m_maxStepHeightSetting;
 
 	std::string m_cameraFrameSetting;
 	std::string m_robotFrameSetting;
@@ -116,7 +116,5 @@ private:
 
 	TransformHelper m_th;
 
-	void buildRosMarkerSteps(visualization_msgs::Marker &marker, std::vector<Plane> &planes, float (&color)[3]);
-
-	//void buildROSMarkerStairways(visualization_msgs::Marker &marker, Stairway &stairway, float (&color)[3]);
+	void buildRosMarkerSteps(visualization_msgs::Marker &marker, std::vector<Plane> &planes, double (&color)[3]);
 };

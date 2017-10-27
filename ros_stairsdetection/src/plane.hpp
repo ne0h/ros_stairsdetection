@@ -4,6 +4,8 @@
 #include <cmath>
 #include <geometry_msgs/Point.h>
 
+#define PI 3.14159265
+
 /**
  * @file plane.hpp
  * @brief A three-dimensional plane.
@@ -20,9 +22,7 @@ public:
 	 * Default constructor that generates a plane with empty coordinates.
 	 */
 	Plane() {
-		geometry_msgs::Point m_min;
 		m_min.x = m_min.y = m_min.z = 0.0;
-		geometry_msgs::Point m_max;
 		m_max.x = m_max.y = m_max.z = 0.0;
 	}
 
@@ -32,6 +32,24 @@ public:
 	 * @param max top right point
 	 */
 	Plane(geometry_msgs::Point min, geometry_msgs::Point max) : m_min(min), m_max(max) {}
+
+	/**
+	 * Creates a new plane out of the bottom center point, the dimensions and the position within the stairway
+	 * @param bottomCenter the point in the bottom center
+	 * @param width the width of the plane
+	 * @param height the height of the plane
+	 * @param depth the depth of the plane
+	 * @param i the position within the stairway, starting from the bottom
+	 */
+	Plane(geometry_msgs::Point bottomCenter, const double width, const double height, const double depth, const int i) {
+		m_min.x = bottomCenter.x + (i * depth);
+		m_min.y = bottomCenter.y - (width / 2);
+		m_min.z = bottomCenter.z + (i * height);
+
+		m_max.x = bottomCenter.x + (i * depth);
+		m_max.y = bottomCenter.y + (width / 2);
+		m_max.z = bottomCenter.z + ((i+1) * height);
+	}
 
 	/**
 	 * Default destructor.
@@ -84,7 +102,7 @@ public:
 	 * Returns the width of the Plane.
 	 * @return the width of the Plane
 	 */
-	float getWidth() {
+	double getWidth() {
 		return fabs(m_max.y - m_min.y);
 	}
 
@@ -92,7 +110,7 @@ public:
 	 * Returns the height of the Plane.
 	 * @return the height of the Plane.
 	 */
-	float getHeight() {
+	double getHeight() {
 		return fabs(m_max.z - m_min.z);
 	}
 
@@ -104,7 +122,7 @@ public:
 		geometry_msgs::Point p;
 		p.x = (m_max.x + m_min.x) / 2;
 		p.y = (m_max.y + m_min.y) / 2;
-		p.z = m_max.z;
+		p.z = (m_max.z > m_min.z) ? m_max.z : m_min.z;
 
 		return p;
 	}
@@ -126,8 +144,17 @@ public:
 	 * Returns the height above ground level.
 	 * @return the height above ground level
 	 */
-	float getHeightAboveGround() {
-		return m_min.z;
+	double getHeightAboveGround() {
+		// Not deterministic if m_min or m_max is heigher...
+		return (m_min.z < m_max.z) ? m_min.z : m_max.z;
+	}
+
+	/**
+	 * Returns the inclination of the plane, expressed in degrees
+	 * @return the inclination of the plane, expressed in degrees
+	 */
+	double getInclination() {
+		return atan(fabs(m_min.x - m_max.x) / fabs(m_min.z - m_max.z)) * 180 / PI;
 	}
 
 	/**
@@ -140,6 +167,7 @@ public:
 		ss << std::fixed << std::setprecision(3);
 		ss << "Width: " << getWidth() << ", height: " << getHeight();
 		ss << ", distance: " << m_min.x;
+		//ss << ", inclination: " << getInclination();
 		ss << ", height above ground: " << getHeightAboveGround();
 
 		return ss.str();
@@ -149,7 +177,7 @@ public:
 	 * Validates if this Plane is equal to another Plane
 	 * @param other the other Plane
 	 */
-	bool equals(struct Plane other) {
+	bool equals(Plane &other) {
 		return (m_min.x == other.getMin().x && m_min.y == other.getMin().y && m_min.z == other.getMin().z
 			&& m_max.x == other.getMax().x && m_max.y == other.getMax().y && m_max.z == other.getMax().z);
 	}

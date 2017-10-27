@@ -77,14 +77,22 @@ public:
 	 * @param point the input point
 	 */
 	bool transformToWorldCoordinates(geometry_msgs::Point &point) {
-		return transform(point, m_robotFrameSetting, m_cameraFrameSetting, -1.f);
+		return transform(point, m_robotFrameSetting, m_worldFrameSetting, -1.f);
 	}
 
 	/**
 	 * Transforms the coordinates of a Plane to world coordinates
 	 * @param plane the input Plane
 	 */
-	bool transformToWorldCoordinates(Plane &plane);
+	bool transformToWorldCoordinates(Plane &plane) {
+		geometry_msgs::Point min = plane.getMin();
+		geometry_msgs::Point max = plane.getMax();
+		transformToWorldCoordinates(min);
+		transformToWorldCoordinates(max);
+	
+		plane.setMinMax(min, max);
+		return true;
+	}
 
 	/**
 	 * Transforms a list of planes to world coordinates.
@@ -94,6 +102,8 @@ public:
 		for (std::vector<Plane>::iterator it = planes.begin(); it != planes.end(); it++) {
 			transformToWorldCoordinates(*it);
 		}
+
+		return true;
 	}
 
 	bool transformToRobotCoordinates(geometry_msgs::Point &point) {
@@ -107,6 +117,45 @@ public:
 		}
 
 		plane.setMinMax(newMin, newMax);
+		return true;
+	}
+
+	bool transformToCameraCoordinates(geometry_msgs::Point &point) {
+		return transform(point, m_robotFrameSetting, m_cameraFrameSetting, -1.f);
+	}
+
+	bool transformToCameraCoordinates(Plane &plane) {
+		geometry_msgs::Point min = plane.getMin();
+		geometry_msgs::Point max = plane.getMax();
+		transformToCameraCoordinates(min);
+		transformToCameraCoordinates(max);
+	
+		plane.setMinMax(min, max);
+		return true;
+	}
+
+	bool transformToCameraCoordinates(std::vector<Plane> &planes) {
+		for (std::vector<Plane>::iterator it = planes.begin(); it != planes.end(); it++) {
+			if (!transformToCameraCoordinates(*it)) {return false;}
+		}
+
+		return true;
+	}
+
+	bool transformToCameraCoordinates(Stairway &stairway) {
+		return transformToCameraCoordinates(stairway.getSteps());
+	}
+
+	/**
+	 * Transforms the coordinates of a vector of stairways to camera coordinates
+	 * @param stairways the stairways to transform
+	 * @return {@code true} of the transformation has been succesful
+	 */
+	bool transformToCameraCoordinates(std::vector<Stairway> &stairways) {
+		for (std::vector<Stairway>::iterator it = stairways.begin(); it != stairways.end(); it++) {
+			if (!transformToCameraCoordinates(*it)) {return false;}
+		}
+
 		return true;
 	}
 

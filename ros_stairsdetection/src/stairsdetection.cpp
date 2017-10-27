@@ -1,10 +1,11 @@
 #include <vector>
-#include <cmath>
 #include <string>
 #include <fstream>
 #include <sstream>
 #include <iostream>
 #include <algorithm>
+#include <cmath>
+#include <pthread.h>
 
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
@@ -32,6 +33,7 @@ bool isStartingStep(Plane &plane);
 bool isNextStep(Stairway &stairway, Plane &plane);
 bool alreadyKnown(Stairway &stairway);
 
+pthread_mutex_t stairwaysMutex;
 vector<Stairway> stairways;
 ROSContext rc;
 
@@ -40,7 +42,8 @@ bool sortPlanes(Plane a, Plane b) {
 }
 
 void callback(const sensor_msgs::PointCloud2ConstPtr &input) {
-	ROS_INFO("=================================================================");
+	ROS_INFO("========================================================================");
+	ROS_INFO("========================================================================");
 	ROS_INFO("New input data received.");
 
 	// convert from ros::pointcloud2 to pcl::pointcloud2
@@ -107,6 +110,11 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &input) {
 		rc.getTransformHelper().getAABB(cloud1, plane);
 		rc.getTransformHelper().transformToRobotCoordinates(plane);
 
+		// Heigh enough?
+		if (plane.getHeight() < rc.getMinStepHeightSetting()) {
+			continue;
+		}
+
 		planes.push_back(plane);
 	}
 
@@ -121,10 +129,10 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &input) {
 	 */
 	if (rc.getPublishStepsSetting()) {
 		ROS_INFO("-----------------------------------------------------------------");
-		ROS_INFO("Publishing %d step(s):", (int) planes.size());
+		ROS_INFO("Publishing %d step(s)", (int) planes.size());
 
 		std::vector<Plane> out = planes;
-		rc.getTransformHelper().transformToWorldCoordinates(out);
+		rc.getTransformHelper().transformToCameraCoordinates(out);
 		rc.publishSteps(out);
 	}
 
@@ -135,12 +143,14 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &input) {
 		return;
 	}
 
-	stairways.clear();
+	pthread_mutex_lock(&stairwaysMutex);
+	//stairways.clear();
+	
+
+	ROS_INFO("-----------------------------------------------------------------");
 	/*
 	 * Try to build (multiple) stairways out of the steps
 	 */
-
-	ROS_INFO("-----------------------------------------------------------------");
 
 	// Look for starting steps.
 	// Every new starting step starts a new stairway and is erased from the list
@@ -157,8 +167,9 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &input) {
 			// only add to global list if not
 			if (!alreadyKnown(s)) {
 				stairways.push_back(s);
-
-
+				ROS_INFO("Found new Stairway!");
+			} else {
+				ROS_INFO("Stairway already known!");
 			}
 
 			// Remove from steps list
@@ -168,7 +179,7 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &input) {
 		}
 	}
 
-	// Look for further steps:
+	// Look for more steps:
 	// Repeat adding steps to the stairways until there are no more addable steps
 	while (true) {
 		bool found_global = false;
@@ -207,132 +218,156 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &input) {
 	 * Publish stairways?
 	 */
 	if (rc.getPublishStairwaysSetting()) {
-		rc.getTransformHelper().transformToWorldCoordinates(stairways);
-		rc.publishStairways(stairways);
+		std::vector<Stairway> out = stairways;
+		rc.getTransformHelper().transformToCameraCoordinates(out);
+		rc.publishStairways(out);
 		ROS_INFO("Published %d stairways", (int) stairways.size());
 	}
+
+	pthread_mutex_unlock(&stairwaysMutex);
 }
 
 bool alreadyKnown(Stairway &stairway) {
+
+	for (vector<Stairway>::iterator it = stairways.begin(); it != stairways.end(); it++) {
+		if (it->almostEquals(stairway)) {
+			return true;
+		}
+	}
+
 	return false;
 }
 
+/**
+ * Starting steps have to meet the requirements defined in the launch file.
+ *  - Must be "near" the ground
+ *  - The height must not be higher (or lower) as the maximal (minimal) height setting
+ *  - The step's width must be at least the width of the robot
+ */
 bool isStartingStep(Plane &plane) {
-	const double top = plane.getMax().z;
-	return (top > rc.getMinStepHeightSetting() && top < rc.getMaxStepHeightSetting());
+	const double maxHeightAboveGround = 0.05;
+
+	// plane is too heigh above the ground
+	if (plane.getHeightAboveGround() > maxHeightAboveGround) {return false;}
+
+	// plane is to heigh or to less heigh
+	const double top = plane.getHeight();
+	if (top < rc.getMinStepHeightSetting() || top > rc.getMaxStepHeightSetting()) {return false;}
+
+	// plane is too narrow
+	if (plane.getWidth() < rc.getMinStepWidthSetting()) {return false;}
+
+	return true;
 }
 
 bool isNextStep(Stairway &stairway, Plane &plane) {
-	const double 	curTop = stairway.getSteps().back().getMax().z,
-					newMin = plane.getMax().z - 0.05,
-					newMax = plane.getMax().z + 0.05;
+	const double curTop = stairway.getSteps().back().getCenterTop().z;
 	
 	return (
 		// plane at least more than the minimum step height higher than the last step of the stairway
-		curTop + 0.17 > newMin
+		curTop + rc.getMinStepHeightSetting() < plane.getCenterTop().z
 
 		// Plane ist not more than the maximum step height higher than the last step of the stairway
-		&& curTop + 0.17 < newMax
+		&& curTop + rc.getMaxStepHeightSetting() > plane.getCenterTop().z
 	);
 }
 
 bool exportStairs(ros_stairsdetection::ExportStairs::Request &req,
 		ros_stairsdetection::ExportStairs::Response &res) {
 
-	/*YAML::Node stairsNode;
+	pthread_mutex_lock(&stairwaysMutex);
 
-	// traverse located stairs
+	// traverse located stairways
+	YAML::Node stairwaysNode;
 	for (vector<Stairway>::iterator it = stairways.begin(); it != stairways.end(); it++) {
-		YAML::Node stairsNode;
+		YAML::Node stairway;
+		YAML::Node first;
 
-		// iterate steps
-		unsigned int i = 0;
-		for (vector<struct Plane>::iterator jt = it->getSteps().begin(); jt != it->getSteps().end(); jt++) {
-			YAML::Node stepNode;
+		// Step count and dimensions
+		stairway["count"] = it->getSteps().size();
+		stairway["width"] = it->getSteps().front().getWidth();
+		stairway["height"] = it->getSteps().front().getHeight();
 
-			// get points
-			YAML::Node pointsNode;
-			vector<pcl::PointXYZ> points;
-			rc.getTransformHelper().buildStepFromAABB(*jt, points);
-			unsigned int j = 1;
-			for (vector<pcl::PointXYZ>::iterator kt = points.begin(); kt != points.end(); kt++) {
-				YAML::Node pointNode;
+		// Depth
+		stairway["depth"] = (it->getSteps().size() > 1)
+				? fabs(it->getSteps().front().getCenterBottom().x - it->getSteps().at(1).getCenterBottom().x)
+				: 0.f;
 
-				geometry_msgs::Point point;
-				rc.getTransformHelper().transformPCLPointToROSPoint(*kt, point);
-				rc.getTransformHelper().transformToWorldCoordinates(point);
-				pointNode["x"] = point.x;
-				pointNode["y"] = point.y;
-				pointNode["z"] = point.z;
+		// Center-bottom point of the first step
+		geometry_msgs::Point cb = it->getSteps().front().getCenterBottom();
+		//rc.getTransformHelper().transformToWorldCoordinates(cb);
+		first["x"] = cb.x;
+		first["y"] = cb.y;
+		first["z"] = cb.z;
+		stairway["first_step"] = first;
 
-				ostringstream convert;
-				convert << "p" << j;
-
-				pointsNode[convert.str()] = pointNode;
-				j++;
-			}
-
-			ostringstream convert;
-			convert << "s" << i;
-			stairsNode[convert.str()] = pointsNode;
-			i++;
-		}
-
-		stairsNode["stairs"].push_back(stairsNode);
+		stairwaysNode["stairways"].push_back(stairway);
 	}
+
+	pthread_mutex_unlock(&stairwaysMutex);
 
 	const string path = req.path;
 	ofstream fout(path.c_str());
-	fout << stairsNode << '\n';
-	res.result = "Written succesfully to " + path + ".";*/
+	fout << stairwaysNode << '\n';
+	res.result = "Written succesfully to " + path + ".";
 	return true;
+}
+
+void buildStep(const double width, const double height, const double depth, const int i, Plane &plane) {
+	geometry_msgs::Point p1;
 }
 
 bool importStairs(ros_stairsdetection::ImportStairs::Request &req,
 		ros_stairsdetection::ImportStairs::Response &res) {
-/*
-	// clear current data
-	stairways.clear();
 
-	// iterate stairs
+	pthread_mutex_lock(&stairwaysMutex);
+
+	// Clear current data and load file
+	stairways.clear();
+	ROS_INFO("Stairways cleared...");
 	YAML::Node root = YAML::LoadFile(req.path);
-	for (YAML::const_iterator it = root["stairs"].begin(); it != root["stairs"].end(); it++) {
+
+	// Iterate stairways
+	for (YAML::const_iterator it = root["stairways"].begin(); it != root["stairways"].end(); it++) {
 		Stairway stairway;
 
-		// iterate steps
-		for (unsigned int i = 0; i < it->size(); i++) {
-			ostringstream convert;
-			convert << "s" << i;
+		const double width  = (*it)["width"].as<double>(),
+					 height = (*it)["height"].as<double>(),
+					 depth  = (*it)["depth"].as<double>();
+		ROS_INFO("Width: %f", width);
+		geometry_msgs::Point bottomCenter;
+		bottomCenter.x = (*it)["first_step"]["x"].as<double>();
+		bottomCenter.y = (*it)["first_step"]["y"].as<double>();
+		bottomCenter.z = (*it)["first_step"]["z"].as<double>();
 
-			geometry_msgs::Point p1;
-			p1.x = (*it)[convert.str()]["p1"]["x"].as<double>();
-			p1.y = (*it)[convert.str()]["p1"]["y"].as<double>();
-			p1.z = (*it)[convert.str()]["p1"]["z"].as<double>();
+		print(bottomCenter);
 
-			geometry_msgs::Point p3;
-			p3.x = (*it)[convert.str()]["p3"]["x"].as<double>();
-			p3.y = (*it)[convert.str()]["p3"]["y"].as<double>();
-			p3.z = (*it)[convert.str()]["p3"]["z"].as<double>();
-
-			Plane step(p1, p3);
+		// Build n steps
+		for (unsigned int i = 0; i < (*it)["count"].as<int>(); i++) {
+			Plane step = Plane(bottomCenter, width, height, depth, i);
 			stairway.getSteps().push_back(step);
 		}
 
 		stairways.push_back(stairway);
+		ROS_INFO("Added a stairway with %d steps", (int) stairway.getSteps().size());
 	}
 
-	rc.publishStairways(stairways);
-	res.result = "Looks like the import has worked.";
-	return true;*/
+	pthread_mutex_unlock(&stairwaysMutex);
+	return true;
 }
 
 bool clearStairs(ros_stairsdetection::ClearStairs::Request &req, ros_stairsdetection::ClearStairs::Response &res) {
+	pthread_mutex_lock(&stairwaysMutex);
+	
 	stairways.clear();
 	rc.publishStairways(stairways);
+
+	pthread_mutex_unlock(&stairwaysMutex);
 	return true;
 }
 
 int main(int argc, char **argv) {
+	pthread_mutex_init(&stairwaysMutex, NULL);
 
 	ROS_INFO("Starting up...");
 	rc.init(argc, argv, &callback, &exportStairs, &importStairs, &clearStairs);
