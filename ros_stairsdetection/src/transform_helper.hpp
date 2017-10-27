@@ -9,7 +9,7 @@
 #include <pcl/point_cloud.h>
 #include <pcl/features/moment_of_inertia_estimation.h>
 
-#include "plane.hpp"
+#include "step.hpp"
 #include "stairway.hpp"
 
 /**
@@ -48,16 +48,16 @@ public:
 	/**
 	 * Returns the axis-aligned bounding box of a point cloud
 	 * @param cloud the input point cloud
-	 * @param plane the output Plane
+	 * @param step the output Step
 	 */
-	void getAABB(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, Plane &plane);
+	void getAABB(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, Step &step);
 
 	/**
 	 * Transforms the coordinates of Stairs into world coordinates.
 	 * @param stairs the input stairs
 	 */
 	void transformToWorldCoordinates(Stairway &stairway) {
-		for (std::vector<Plane>::iterator it = stairway.getSteps().begin(); it != stairway.getSteps().end(); it++) {
+		for (std::vector<Step>::iterator it = stairway.getSteps().begin(); it != stairway.getSteps().end(); it++) {
 			transformToWorldCoordinates(*it);
 		}
 	}
@@ -81,25 +81,25 @@ public:
 	}
 
 	/**
-	 * Transforms the coordinates of a Plane to world coordinates
-	 * @param plane the input Plane
+	 * Transforms the coordinates of a Step to world coordinates
+	 * @param step the input Step
 	 */
-	bool transformToWorldCoordinates(Plane &plane) {
-		geometry_msgs::Point min = plane.getMin();
-		geometry_msgs::Point max = plane.getMax();
+	bool transformToWorldCoordinates(Step &step) {
+		geometry_msgs::Point min = step.getMin();
+		geometry_msgs::Point max = step.getMax();
 		transformToWorldCoordinates(min);
 		transformToWorldCoordinates(max);
 	
-		plane.setMinMax(min, max);
+		step.setMinMax(min, max);
 		return true;
 	}
 
 	/**
-	 * Transforms a list of planes to world coordinates.
-	 * @param planes the planes to transform
+	 * Transforms a list of Steps to world coordinates.
+	 * @param steps the Steps to transform
 	 */
-	bool transformToWorldCoordinates(std::vector<Plane> &planes) {
-		for (std::vector<Plane>::iterator it = planes.begin(); it != planes.end(); it++) {
+	bool transformToWorldCoordinates(std::vector<Step> &steps) {
+		for (std::vector<Step>::iterator it = steps.begin(); it != steps.end(); it++) {
 			transformToWorldCoordinates(*it);
 		}
 
@@ -110,13 +110,13 @@ public:
 		return transform(point, m_robotFrameSetting, m_cameraFrameSetting, 1.f);
 	}
 
-	bool transformToRobotCoordinates(Plane &plane) {
-		geometry_msgs::Point newMin = plane.getMin(), newMax = plane.getMax();
+	bool transformToRobotCoordinates(Step &step) {
+		geometry_msgs::Point newMin = step.getMin(), newMax = step.getMax();
 		if ((!transformToRobotCoordinates(newMin)) || (!transformToRobotCoordinates(newMax))) {
 			return false;
 		}
 
-		plane.setMinMax(newMin, newMax);
+		step.setMinMax(newMin, newMax);
 		return true;
 	}
 
@@ -124,18 +124,18 @@ public:
 		return transform(point, m_robotFrameSetting, m_cameraFrameSetting, -1.f);
 	}
 
-	bool transformToCameraCoordinates(Plane &plane) {
-		geometry_msgs::Point min = plane.getMin();
-		geometry_msgs::Point max = plane.getMax();
+	bool transformToCameraCoordinates(Step &step) {
+		geometry_msgs::Point min = step.getMin();
+		geometry_msgs::Point max = step.getMax();
 		transformToCameraCoordinates(min);
 		transformToCameraCoordinates(max);
 	
-		plane.setMinMax(min, max);
+		step.setMinMax(min, max);
 		return true;
 	}
 
-	bool transformToCameraCoordinates(std::vector<Plane> &planes) {
-		for (std::vector<Plane>::iterator it = planes.begin(); it != planes.end(); it++) {
+	bool transformToCameraCoordinates(std::vector<Step> &steps) {
+		for (std::vector<Step>::iterator it = steps.begin(); it != steps.end(); it++) {
 			if (!transformToCameraCoordinates(*it)) {return false;}
 		}
 
@@ -174,7 +174,7 @@ public:
 	 */
 	//bool transformToBaseLinkCoordinates(geometry_msgs::Point &point);
 
-	void buildStepFromAABB(Plane &plane, std::vector<geometry_msgs::Point> &points);
+	void buildStepFromAABB(Step &step, std::vector<geometry_msgs::Point> &points);
 
 private:
 	std::string m_cameraFrameSetting;

@@ -22,22 +22,22 @@
 
 #include "stairway.hpp"
 #include "ros_context.hpp"
-#include "plane.hpp"
+#include "step.hpp"
 #include "transform_helper.hpp"
 #include "print_helpers.hpp"
 
 using namespace std;
 
 // forward declarations
-bool isStartingStep(Plane &plane);
-bool isNextStep(Stairway &stairway, Plane &plane);
+bool isStartingStep(Step &step);
+bool isNextStep(Stairway &stairway, Step &step);
 bool alreadyKnown(Stairway &stairway);
 
 pthread_mutex_t stairwaysMutex;
 vector<Stairway> stairways;
 ROSContext rc;
 
-bool sortPlanes(Plane a, Plane b) {
+bool sortSteps(Step a, Step b) {
 	return (a.getMin().x < b.getMin().x);
 }
 
@@ -80,7 +80,7 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &input) {
 			cloud2(new pcl::PointCloud<pcl::PointXYZ>);
 	unsigned int pointsAtStart = cloud->points.size(), id = -1;
 
-	vector<Plane> planes;
+	vector<Step> steps;
 
 	// Extract a model and repeat while 10% of the original cloud is still present
 	while (cloud->points.size() > 0.1 * pointsAtStart) {
@@ -106,32 +106,32 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &input) {
 
 		// calculate AABB and transform to world coordinates
 		// PCL points are automatically transformed to ROS points while calculating AABB
-		Plane plane;
-		rc.getTransformHelper().getAABB(cloud1, plane);
-		rc.getTransformHelper().transformToRobotCoordinates(plane);
+		Step step;
+		rc.getTransformHelper().getAABB(cloud1, step);
+		rc.getTransformHelper().transformToRobotCoordinates(step);
 
 		// Heigh enough?
-		if (plane.getHeight() < rc.getMinStepHeightSetting()) {
+		if (step.getHeight() < rc.getMinStepHeightSetting()) {
 			continue;
 		}
 
-		planes.push_back(plane);
+		steps.push_back(step);
 	}
 
 	/**
-	 * Order planes by distance and print
+	 * Order Steps by distance and print
 	 */
-	std::sort(planes.begin(), planes.end(), sortPlanes);
-	print(planes);
+	std::sort(steps.begin(), steps.end(), sortSteps);
+	print(steps);
 
 	/**
 	 * Publish steps?
 	 */
 	if (rc.getPublishStepsSetting()) {
 		ROS_INFO("-----------------------------------------------------------------");
-		ROS_INFO("Publishing %d step(s)", (int) planes.size());
+		ROS_INFO("Publishing %d step(s)", (int) steps.size());
 
-		std::vector<Plane> out = planes;
+		std::vector<Step> out = steps;
 		rc.getTransformHelper().transformToCameraCoordinates(out);
 		rc.publishSteps(out);
 	}
@@ -154,7 +154,7 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &input) {
 
 	// Look for starting steps.
 	// Every new starting step starts a new stairway and is erased from the list
-	for (vector<Plane>::iterator it = planes.begin(); it != planes.end();) {
+	for (vector<Step>::iterator it = steps.begin(); it != steps.end();) {
 
 		if (isStartingStep(*it)) {
 			ROS_INFO("Found starting step: %s", it->toString().c_str());
@@ -173,7 +173,7 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &input) {
 			}
 
 			// Remove from steps list
-			it = planes.erase(it);
+			it = steps.erase(it);
 		} else {
 			++it;
 		}
@@ -184,7 +184,7 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &input) {
 	while (true) {
 		bool found_global = false;
 
-		for (vector<Plane>::iterator it = planes.begin(); it != planes.end();) {
+		for (vector<Step>::iterator it = steps.begin(); it != steps.end();) {
 			
 			// Does this step belong to a stairway that has already been found?
 			// Iterate stairways...
@@ -196,7 +196,7 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &input) {
 					jt->getSteps().push_back(*it);
 
 					// Remove step from steps list
-					it = planes.erase(it);
+					it = steps.erase(it);
 
 					found = true;
 					found_global = true;
@@ -244,31 +244,31 @@ bool alreadyKnown(Stairway &stairway) {
  *  - The height must not be higher (or lower) as the maximal (minimal) height setting
  *  - The step's width must be at least the width of the robot
  */
-bool isStartingStep(Plane &plane) {
+bool isStartingStep(Step &step) {
 	const double maxHeightAboveGround = 0.05;
 
-	// plane is too heigh above the ground
-	if (plane.getHeightAboveGround() > maxHeightAboveGround) {return false;}
+	// step is too heigh above the ground
+	if (step.getHeightAboveGround() > maxHeightAboveGround) {return false;}
 
-	// plane is to heigh or to less heigh
-	const double top = plane.getHeight();
+	// step is to heigh or to less heigh
+	const double top = step.getHeight();
 	if (top < rc.getMinStepHeightSetting() || top > rc.getMaxStepHeightSetting()) {return false;}
 
-	// plane is too narrow
-	if (plane.getWidth() < rc.getMinStepWidthSetting()) {return false;}
+	// step is too narrow
+	if (step.getWidth() < rc.getMinStepWidthSetting()) {return false;}
 
 	return true;
 }
 
-bool isNextStep(Stairway &stairway, Plane &plane) {
+bool isNextStep(Stairway &stairway, Step &step) {
 	const double curTop = stairway.getSteps().back().getCenterTop().z;
 	
 	return (
-		// plane at least more than the minimum step height higher than the last step of the stairway
-		curTop + rc.getMinStepHeightSetting() < plane.getCenterTop().z
+		// step at least more than the minimum step height higher than the last step of the stairway
+		curTop + rc.getMinStepHeightSetting() < step.getCenterTop().z
 
-		// Plane ist not more than the maximum step height higher than the last step of the stairway
-		&& curTop + rc.getMaxStepHeightSetting() > plane.getCenterTop().z
+		// step ist not more than the maximum step height higher than the last step of the stairway
+		&& curTop + rc.getMaxStepHeightSetting() > step.getCenterTop().z
 	);
 }
 
@@ -313,7 +313,7 @@ bool exportStairs(ros_stairsdetection::ExportStairs::Request &req,
 	return true;
 }
 
-void buildStep(const double width, const double height, const double depth, const int i, Plane &plane) {
+void buildStep(const double width, const double height, const double depth, const int i, Step &step) {
 	geometry_msgs::Point p1;
 }
 
@@ -344,7 +344,7 @@ bool importStairs(ros_stairsdetection::ImportStairs::Request &req,
 
 		// Build n steps
 		for (unsigned int i = 0; i < (*it)["count"].as<int>(); i++) {
-			Plane step = Plane(bottomCenter, width, height, depth, i);
+			Step step = Step(bottomCenter, width, height, depth, i);
 			stairway.getSteps().push_back(step);
 		}
 

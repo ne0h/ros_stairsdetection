@@ -5,12 +5,12 @@
 #include <ros/ros.h>
 #include <geometry_msgs/Point.h>
 
-void print(Plane &plane) {
-    ROS_INFO("%s", plane.toString().c_str());
+void print(Step &step) {
+    ROS_INFO("%s", step.toString().c_str());
 }
 
-void print(std::vector<Plane> &planes) {
-    for (std::vector<Plane>::iterator it = planes.begin(); it != planes.end(); it++) {
+void print(std::vector<Step> &steps) {
+    for (std::vector<Step>::iterator it = steps.begin(); it != steps.end(); it++) {
 		print(*it);
 	}
 }

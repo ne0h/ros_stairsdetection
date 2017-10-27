@@ -1,7 +1,7 @@
 #pragma once
 
 #include <vector>
-#include "plane.hpp"
+#include "step.hpp"
 #include <ros/ros.h>
 
 /**
@@ -18,7 +18,7 @@ public:
      * Returns a std::vector of Steps starting from below.
      * @return a std::vector of Steps starting from below.
      */
-    std::vector<Plane>& getSteps() {
+    std::vector<Step>& getSteps() {
         return m_steps;
     }
 
@@ -26,7 +26,7 @@ public:
      * Returns the first Step of the Stairway.
      * @return the first Step of the Stairway.
      */
-    Plane& getFirst() {
+    Step& getFirst() {
         return m_steps.front();
     }
 
@@ -45,6 +45,6 @@ public:
 	}
 
 private:
-    std::vector<Plane> m_steps;
+    std::vector<Step> m_steps;
 
 };

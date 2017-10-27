@@ -1,10 +1,10 @@
 #include <vector>
 
 #include "transform_helper.hpp"
-#include "plane.hpp"
+#include "step.hpp"
 #include "print_helpers.hpp"
 
-void TransformHelper::getAABB(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, Plane &plane) {
+void TransformHelper::getAABB(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, Step &step) {
 	pcl::MomentOfInertiaEstimation<pcl::PointXYZ> feature_extractor;
 	feature_extractor.setInputCloud(cloud);
 	feature_extractor.compute();
@@ -17,7 +17,7 @@ void TransformHelper::getAABB(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, Plane &
 	transformPCLPointToROSPoint(min, min_r);
 	transformPCLPointToROSPoint(max, max_r);
 
-	plane.setMinMax(min_r, max_r);
+	step.setMinMax(min_r, max_r);
 }
 
 bool TransformHelper::transform(geometry_msgs::Point &point, std::string &target_frame, std::string &source_frame,
@@ -60,25 +60,25 @@ void TransformHelper::transformPCLPointToROSPoint(pcl::PointXYZ &input, geometry
  *  P4----------------Min
  *
  */
-void TransformHelper::buildStepFromAABB(Plane &plane, std::vector<geometry_msgs::Point> &points) {
+void TransformHelper::buildStepFromAABB(Step &step, std::vector<geometry_msgs::Point> &points) {
 
 	// min
-	points.push_back(plane.getMin());
+	points.push_back(step.getMin());
 
 	// p2
 	geometry_msgs::Point p2;
-	p2.x = plane.getMin().x;
-	p2.y = plane.getMin().y;
-	p2.z = plane.getMax().z;
+	p2.x = step.getMin().x;
+	p2.y = step.getMin().y;
+	p2.z = step.getMax().z;
 	points.push_back(p2);
 
 	// max
-	points.push_back(plane.getMax());
+	points.push_back(step.getMax());
 
 	// p4
 	geometry_msgs::Point p4;
-	p4.x = plane.getMax().x;
-	p4.y = plane.getMax().y;
-	p4.z = plane.getMin().z;
+	p4.x = step.getMax().x;
+	p4.y = step.getMax().y;
+	p4.z = step.getMin().z;
 	points.push_back(p4);
 }

@@ -4,12 +4,12 @@
 
 #include <geometry_msgs/Point.h>
 
-#include "plane.hpp"
+#include "step.hpp"
 #include "stairway.hpp"
 
-void print(Plane &plane);
+void print(Step &step);
 
-void print(std::vector<Plane> &planes);
+void print(std::vector<Step> &steps);
 
 void print(Stairway &stairway);
 

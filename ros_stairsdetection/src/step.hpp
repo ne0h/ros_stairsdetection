@@ -7,41 +7,37 @@
 #define PI 3.14159265
 
 /**
- * @file plane.hpp
- * @brief A three-dimensional plane.
- * @author Maximilian Hess <mail@ne0h.de>
- *
- * This class is adjusted to fullfil the needs of stairsdetection. In this context, Planes normally are vertical in
- * front of the robot.
+ * \brief Represents a single Step.
+ * \author Maximilian Hess <mail@ne0h.de>
  */
-class Plane {
+class Step {
 
 public:
 	
 	/**
-	 * Default constructor that generates a plane with empty coordinates.
+	 * Default constructor that generates a Step with empty coordinates.
 	 */
-	Plane() {
+	Step() {
 		m_min.x = m_min.y = m_min.z = 0.0;
 		m_max.x = m_max.y = m_max.z = 0.0;
 	}
 
 	/**
-	 * Creates a plane out of two points.
+	 * Creates a Step out of two points.
 	 * @param min bottom left point
 	 * @param max top right point
 	 */
-	Plane(geometry_msgs::Point min, geometry_msgs::Point max) : m_min(min), m_max(max) {}
+	Step(geometry_msgs::Point min, geometry_msgs::Point max) : m_min(min), m_max(max) {}
 
 	/**
-	 * Creates a new plane out of the bottom center point, the dimensions and the position within the stairway
+	 * Creates a new Step out of the bottom center point, the dimensions and its position within the stairway
 	 * @param bottomCenter the point in the bottom center
-	 * @param width the width of the plane
-	 * @param height the height of the plane
-	 * @param depth the depth of the plane
+	 * @param width the width of the Step
+	 * @param height the height of the Step
+	 * @param depth the depth of the Step
 	 * @param i the position within the stairway, starting from the bottom
 	 */
-	Plane(geometry_msgs::Point bottomCenter, const double width, const double height, const double depth, const int i) {
+	Step(geometry_msgs::Point bottomCenter, const double width, const double height, const double depth, const int i) {
 		m_min.x = bottomCenter.x + (i * depth);
 		m_min.y = bottomCenter.y - (width / 2);
 		m_min.z = bottomCenter.z + (i * height);
@@ -54,7 +50,7 @@ public:
 	/**
 	 * Default destructor.
 	 */
-	~Plane() {}
+	~Step() {}
 
 	/**
 	 * Returns the bottom left point.
@@ -99,16 +95,16 @@ public:
 	}
 
 	/**
-	 * Returns the width of the Plane.
-	 * @return the width of the Plane
+	 * Returns the width of the Step.
+	 * @return the width of the Step
 	 */
 	double getWidth() {
 		return fabs(m_max.y - m_min.y);
 	}
 
 	/**
-	 * Returns the height of the Plane.
-	 * @return the height of the Plane.
+	 * Returns the height of the Step.
+	 * @return the height of the Step.
 	 */
 	double getHeight() {
 		return fabs(m_max.z - m_min.z);
@@ -150,16 +146,16 @@ public:
 	}
 
 	/**
-	 * Returns the inclination of the plane, expressed in degrees
-	 * @return the inclination of the plane, expressed in degrees
+	 * Returns the inclination of the Step, expressed in degrees
+	 * @return the inclination of the Step, expressed in degrees
 	 */
 	double getInclination() {
 		return atan(fabs(m_min.x - m_max.x) / fabs(m_min.z - m_max.z)) * 180 / PI;
 	}
 
 	/**
-	 * Returns a brief, human-readable description of the plane
-	 * @return a brief, human-readable description of the plane
+	 * Returns a brief, human-readable description of the Step
+	 * @return a brief, human-readable description of the Step
 	 */
 	std::string toString() {
 		std::stringstream ss;
@@ -174,10 +170,10 @@ public:
 	}
 
 	/**
-	 * Validates if this Plane is equal to another Plane
-	 * @param other the other Plane
+	 * Validates if this Step is equal to another Step
+	 * @param other the other Step
 	 */
-	bool equals(Plane &other) {
+	bool equals(Step &other) {
 		return (m_min.x == other.getMin().x && m_min.y == other.getMin().y && m_min.z == other.getMin().z
 			&& m_max.x == other.getMax().x && m_max.y == other.getMax().y && m_max.z == other.getMax().z);
 	}

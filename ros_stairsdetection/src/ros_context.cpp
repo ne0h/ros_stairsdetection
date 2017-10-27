@@ -63,7 +63,7 @@ void ROSContext::init(int argc, char **argv, void (*callback)(const sensor_msgs:
 	ros::spin();
 }
 
-void ROSContext::buildRosMarkerSteps(visualization_msgs::Marker &marker, std::vector<Plane> &planes,
+void ROSContext::buildRosMarkerSteps(visualization_msgs::Marker &marker, std::vector<Step> &steps,
 	double (&color)[3]) {
 
 	marker.header.frame_id = m_cameraFrameSetting.c_str();
@@ -81,7 +81,7 @@ void ROSContext::buildRosMarkerSteps(visualization_msgs::Marker &marker, std::ve
 	marker.color.b = color[2];
 	marker.color.a = 1.0;
 
-	for (std::vector<Plane>::iterator it = planes.begin(); it != planes.end(); it++) {
+	for (std::vector<Step>::iterator it = steps.begin(); it != steps.end(); it++) {
 
 		std::vector<geometry_msgs::Point> points;
 		m_th.buildStepFromAABB(*it, points);
@@ -124,14 +124,14 @@ void ROSContext::publishStairways(std::vector<Stairway> &stairway) {
 	m_pubStairways.publish(markerArray);
 }
 
-void ROSContext::publishSteps(std::vector<Plane> &planes) {
+void ROSContext::publishSteps(std::vector<Step> &steps) {
 	visualization_msgs::MarkerArray markerArray;
 	visualization_msgs::Marker marker;
 	double color[3];
 	color[0] = color[1] = 0.f;
 	color[2] = 1.f;
 
-	buildRosMarkerSteps(marker, planes, color);
+	buildRosMarkerSteps(marker, steps, color);
 	markerArray.markers.push_back(marker);
 	m_pubSteps.publish(markerArray);
 }

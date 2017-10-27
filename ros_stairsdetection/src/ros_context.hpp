@@ -14,29 +14,12 @@
 #include <geometry_msgs/Point.h>
 #include <tf2_ros/transform_listener.h>
 
-#include "plane.hpp"
+#include "step.hpp"
 #include "stairway.hpp"
 #include "transform_helper.hpp"
 
-/*
- * Get vertices of the rectangle
- *
- *  p2-----------------p3
- *  |                   |
- *  |                   |
- *  p1-----------------p4
- *
- *
-void buildStepFromAABB(Plane *plane, std::vector<pcl::PointXYZ> *points);
-
-void buildRosMarkerSteps(visualization_msgs::Marker *marker, std::vector<Plane> *planes, float *color,
-		std::string cameraSetting, std::string namespaceSetting, std::string cameraHeightAboveGroundSetting);
-
-void buildROSMarkerStaiways(visualization_msgs::Marker *marker, struct Stairs *stairs, float *color);
-
-void showStairsInRVIZ(std::vector<struct Stairs> *stairs);*/
-
 class ROSContext {
+
 public:
 
 	void init(int argc, char **argv, void (*callback)(const sensor_msgs::PointCloud2ConstPtr&),
@@ -87,7 +70,7 @@ public:
 		return m_th;
 	}
 
-	void publishSteps(std::vector<Plane> &planes);
+	void publishSteps(std::vector<Step> &steps);
 
 	void publishStairways(std::vector<Stairway> &stairway);
 
@@ -116,5 +99,5 @@ private:
 
 	TransformHelper m_th;
 
-	void buildRosMarkerSteps(visualization_msgs::Marker &marker, std::vector<Plane> &planes, double (&color)[3]);
+	void buildRosMarkerSteps(visualization_msgs::Marker &marker, std::vector<Step> &steps, double (&color)[3]);
 };
