@@ -77,7 +77,7 @@ public:
 	 * @param point the input point
 	 */
 	bool transformToWorldCoordinates(geometry_msgs::Point &point) {
-		return transform(point, m_robotFrameSetting, m_worldFrameSetting, -1.f);
+		return transform(point, m_worldFrameSetting, m_robotFrameSetting, -1.f);
 	}
 
 	/**

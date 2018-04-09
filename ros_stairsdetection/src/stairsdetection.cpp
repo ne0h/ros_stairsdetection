@@ -289,18 +289,23 @@ bool exportStairs(ros_stairsdetection::ExportStairs::Request &req,
 		YAML::Node first;
 
 		// Step count and dimensions
-		stairway["count"] = it->getSteps().size();
-		stairway["width"] = it->getSteps().front().getWidth();
-		stairway["height"] = it->getSteps().front().getHeight();
+		stairway["step_height"] = it->getSteps().front().getHeight();
+		stairway["step_count"]  = it->getSteps().size();
+		stairway["step_width"]  = it->getSteps().front().getWidth();
+		double height = 0.0;
+		for (vector<Step>::iterator jt = (*it).getSteps().begin(); jt != (*it).getSteps().end(); jt++) {
+			height += (*jt).getHeight();
+		}
+		stairway["stairway_height"] = height;
 
-		// Depth
-		stairway["depth"] = (it->getSteps().size() > 1)
+		// Depth (is only set if we found more than one step)
+		stairway["step_depth"] = (it->getSteps().size() > 1)
 				? fabs(it->getSteps().front().getCenterBottom().x - it->getSteps().at(1).getCenterBottom().x)
 				: 0.f;
 
 		// Center-bottom point of the first step
 		geometry_msgs::Point cb = it->getSteps().front().getCenterBottom();
-		//rc.getTransformHelper().transformToWorldCoordinates(cb);
+		rc.getTransformHelper().transformToWorldCoordinates(cb);
 		first["x"] = cb.x;
 		first["y"] = cb.y;
 		first["z"] = cb.z;
@@ -326,6 +331,7 @@ bool importStairs(ros_stairsdetection::ImportStairs::Request &req,
 		ros_stairsdetection::ImportStairs::Response &res) {
 
 	pthread_mutex_lock(&stairwaysMutex);
+	ROS_INFO("Import started...");
 
 	// Clear current data and load file
 	stairways.clear();
@@ -336,9 +342,9 @@ bool importStairs(ros_stairsdetection::ImportStairs::Request &req,
 	for (YAML::const_iterator it = root["stairways"].begin(); it != root["stairways"].end(); it++) {
 		Stairway stairway;
 
-		const double width  = (*it)["width"].as<double>(),
-					 height = (*it)["height"].as<double>(),
-					 depth  = (*it)["depth"].as<double>();
+		const double width  = (*it)["step_width"].as<double>(),
+					 height = (*it)["step_height"].as<double>(),
+					 depth  = (*it)["step_depth"].as<double>();
 		ROS_INFO("Width: %f", width);
 		geometry_msgs::Point bottomCenter;
 		bottomCenter.x = (*it)["first_step"]["x"].as<double>();
@@ -348,7 +354,7 @@ bool importStairs(ros_stairsdetection::ImportStairs::Request &req,
 		print(bottomCenter);
 
 		// Build n steps
-		for (unsigned int i = 0; i < (*it)["count"].as<int>(); i++) {
+		for (unsigned int i = 0; i < (*it)["step_count"].as<int>(); i++) {
 			Step step = Step(bottomCenter, width, height, depth, i);
 			stairway.getSteps().push_back(step);
 		}
@@ -357,6 +363,7 @@ bool importStairs(ros_stairsdetection::ImportStairs::Request &req,
 		ROS_INFO("Added a stairway with %d steps", (int) stairway.getSteps().size());
 	}
 
+	ROS_INFO("Import finished.");
 	pthread_mutex_unlock(&stairwaysMutex);
 	return true;
 }
