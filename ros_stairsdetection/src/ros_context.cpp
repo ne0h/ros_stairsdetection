@@ -34,6 +34,7 @@ void ROSContext::init(int argc, char **argv, void (*callback)(const sensor_msgs:
 	ros::param::get("~segmentation_threshold", m_segmentationThresholdSetting);
 
 	ros::param::get("~min_step_width", m_minStepWidthSetting);
+	ros::param::get("~max_step_width", m_maxStepWidthSetting);
 	ros::param::get("~min_step_height", m_minStepHeightSetting);
 	ros::param::get("~max_step_height", m_maxStepHeightSetting);
 
@@ -114,8 +115,9 @@ void ROSContext::publishStairways(std::vector<Stairway> &stairway) {
 	for (std::vector<Stairway>::iterator it = stairway.begin(); it != stairway.end(); it++) {
 		visualization_msgs::Marker marker;
 		double color[3];
-		color[0] = color[2] = 0.f;
-		color[1] = 1.f;
+		color[0] = ((double) rand()) / RAND_MAX;
+		color[1] = ((double) rand()) / RAND_MAX;
+		color[2] = ((double) rand()) / RAND_MAX;
 
 		buildRosMarkerSteps(marker, it->getSteps(), color);
 		markerArray.markers.push_back(marker);

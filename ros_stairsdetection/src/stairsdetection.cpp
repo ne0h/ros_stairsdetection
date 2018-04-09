@@ -109,9 +109,15 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &input) {
 		Step step;
 		rc.getTransformHelper().getAABB(cloud1, step);
 		rc.getTransformHelper().transformToRobotCoordinates(step);
+		rc.getTransformHelper().transformToWorldCoordinates(step);
 
 		// Heigh enough?
 		if (step.getHeight() < rc.getMinStepHeightSetting()) {
+			continue;
+		}
+
+		// Narrow enough?
+		if (step.getWidth() > rc.getMaxStepWidthSetting()) {
 			continue;
 		}
 
@@ -144,7 +150,6 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &input) {
 	}
 
 	pthread_mutex_lock(&stairwaysMutex);
-	//stairways.clear();
 	
 
 	ROS_INFO("-----------------------------------------------------------------");

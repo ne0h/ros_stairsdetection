@@ -42,6 +42,10 @@ public:
 		return m_minStepWidthSetting;
 	}
 
+	double getMaxStepWidthSetting() {
+		return m_maxStepWidthSetting;
+	}
+
 	double getMinStepHeightSetting() {
 		return m_minStepHeightSetting;
 	}
@@ -89,6 +93,7 @@ private:
 	double m_segmentationThresholdSetting;
 
 	double m_minStepWidthSetting;
+	double m_maxStepWidthSetting;
 	double m_minStepHeightSetting;
 	double m_maxStepHeightSetting;
 
