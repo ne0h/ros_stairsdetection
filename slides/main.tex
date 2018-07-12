@@ -139,11 +139,11 @@
 	\end{itemize}
 	\begin{columns}
 		\column{0.25\textwidth}
-			\includegraphics[scale=0.16]{images/canny00.pdf}\newline
-			\includegraphics[scale=0.16]{images/canny02.pdf}
+		\includegraphics[scale=0.16]{images/canny00.pdf}\newline
+		\includegraphics[scale=0.16]{images/canny02.pdf}
 		\column{0.25\textwidth}
-			\includegraphics[scale=0.16]{images/canny01.pdf}\newline
-			\includegraphics[scale=0.16]{images/canny03.pdf}
+		\includegraphics[scale=0.16]{images/canny01.pdf}\newline
+		\includegraphics[scale=0.16]{images/canny03.pdf}
 	\end{columns}
 \end{frame}
 
@@ -153,16 +153,21 @@
 	\begin{itemize}
 		\item Eingabe: zwei-dimensionale Punktwolke
 		\item Verwendung des RANSAC-Algorithmus zur Ermittlung von Flächen (dazu gleich mehr)
-		\item \dots
 	\end{itemize}
 \end{frame}
 
 \begin{frame}{RANSAC-Algorithmus}
-	\begin{itemize}
-		\item Blabla
-		\item Linien und Flächen
-		\item Blabla
-	\end{itemize}
+	\begin{columns}
+		\column{0.65\textwidth}
+		\begin{itemize}
+			\item Problem: Automatisch erfasste Messdaten enthalten meist viele Ausreißer
+			\item RANSAC: Algorithmus zum Entfernen von Ausreißern \(\longrightarrow\) Ermittlung von Zwischenwerten
+			\item Zwischenwerte als Eingabe für Zielalgorithmus
+		\end{itemize}
+		\column{0.35\textwidth}
+		\includegraphics[scale=0.28]{images/ausreisser.pdf}
+		(Quelle: Wikipedia)
+	\end{columns}
 \end{frame}
 
 
