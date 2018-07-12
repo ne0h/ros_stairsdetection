@@ -27,6 +27,7 @@
 \usepackage{templates/tikzkit}
 % \usepackage{templates/tikzuml}
 \usepackage{listings}
+\usepackage{tabulary}
 
 \selectlanguage{ngerman}
 
@@ -130,11 +131,20 @@
 
 \section{Theoretische Vorüberlegungen}
 
-\subsection{Ansatz 1: Erkennen von Treppen mittels horizontaler Linien}
+\subsection{Ansatz 1: Erkennen von Treppen mittels horizontaler Linien }
 \begin{frame}{Ansatz 1: Erkennen von Treppen mittels horizontaler Linien}
 	\begin{itemize}
-		\item
+		\item Canny-Algorithmus zur Kantenerkennung
+		\item Eingabe: Tiefenbild von Asus Xtion Kamera
 	\end{itemize}
+	\begin{columns}
+		\column{0.25\textwidth}
+			\includegraphics[scale=0.16]{images/canny00.pdf}\newline
+			\includegraphics[scale=0.16]{images/canny02.pdf}
+		\column{0.25\textwidth}
+			\includegraphics[scale=0.16]{images/canny01.pdf}\newline
+			\includegraphics[scale=0.16]{images/canny03.pdf}
+	\end{columns}
 \end{frame}
 
 
@@ -171,7 +181,7 @@
 
 \begin{frame}{Implementierung im Detail}
 	\begin{enumerate}
-		\item Emfangen und Downsamplen der Punktwolke
+		\item Empfangen und Downsamplen der Punktwolke
 		\item Aktivitätsdiagramm
 		\item \dots
 	\end{enumerate}
