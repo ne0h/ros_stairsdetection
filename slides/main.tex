@@ -60,12 +60,12 @@
 \section{Motivation}
 
 \begin{frame}{Motivation}
-	\begin{itemize}
-		\item Ziel: Finden und Kartografieren von Treppen
-		\item Ermöglicht die Einführung von Ebenen in 2D-Karten
-		\item Verknüpfung der Ebenen mittels Treppenmarkierungen
-		\item Anwendungsbeispiel: Wegfindung über mehrere Stockwerke
-	\end{itemize}
+\begin{itemize}
+	\item Ziel: Finden und Kartografieren von Treppen
+	\item Ermöglicht die Einführung von Ebenen in 2D-Karten
+	\item Verknüpfung der Ebenen mittels Treppenmarkierungen
+	\item Anwendungsbeispiel: Wegfindung über mehrere Stockwerke
+\end{itemize}
 \end{frame}
 
 
@@ -74,48 +74,48 @@
 
 \subsection{Roboterplattform - HMMWV}
 \begin{frame}{Roboterplattform - HMMWV}
+\begin{itemize}
+	\item Hardwareausstattung Basisversion
 	\begin{itemize}
-		\item Hardwareausstattung Basisversion
-		\begin{itemize}
-			\item Sick LMS 100 (LiDAR) zum 2-dimensionalen Mappen und Lokalisieren
-			\item Brix mit Intel Core 2 Duo..
-			\item ATmega-basiertes Steuerinterface (Atmel ATmega 2560)
-			\item WLAN-Router
-		\end{itemize}
-		\item Hardwareerweiterungen für die Treppenerkennung
-		\begin{itemize}
-			\item Schnellerer Brix mit Intel i5 vierter Generation für 3D-Berechnungen
-			\item Asus Action Camera für 3D-Erfassung der Umgebung
-		\end{itemize}
+		\item Sick LMS 100 (LiDAR) zum 2-dimensionalen Mappen und Lokalisieren
+		\item Brix mit Intel Core 2 Duo..
+		\item ATmega-basiertes Steuerinterface (Atmel ATmega 2560)
+		\item WLAN-Router
 	\end{itemize}
+	\item Hardwareerweiterungen für die Treppenerkennung
+	\begin{itemize}
+		\item Schnellerer Brix mit Intel i5 vierter Generation für 3D-Berechnungen
+		\item Asus Action Camera für 3D-Erfassung der Umgebung
+	\end{itemize}
+\end{itemize}
 \end{frame}
 
 \begin{frame}{Roboterplattform - HMMWV}
-	\begin{center}
-		%\includegraphics[scale=0.16]{images/ransac01.pdf}
-		Foto von HMMWV
-	\end{center}
+\begin{center}
+	%\includegraphics[scale=0.16]{images/ransac01.pdf}
+	Foto von HMMWV
+\end{center}
 \end{frame}
 
 
 \subsection{Robot Operating System (ROS)}
 \begin{frame}{Robot Operating System (ROS)}
+\begin{itemize}
+	\item Verteilte Middleware zum Automatisieren von Kommunikation der Komponenten von Robotern
+	\item Zentrale Aufgaben
 	\begin{itemize}
-		\item Verteilte Middleware zum Automatisieren von Kommunikation der Komponenten von Robotern
-		\item Zentrale Aufgaben
-		\begin{itemize}
-			\item Nachrichtenaustausch zwischen Programmteilen
-			\item Hardwareabstraktion
-		\end{itemize}
-		\item Viele Komponenten für Standardaufgaben (z.B. SLAM)
+		\item Nachrichtenaustausch zwischen Programmteilen
+		\item Hardwareabstraktion
 	\end{itemize}
+	\item Viele Komponenten für Standardaufgaben (z.B. SLAM)
+\end{itemize}
 \end{frame}
 
 \begin{frame}{Node-Diagramm}
-	\begin{center}
-		%\includegraphics[scale=0.16]{images/ransac00.pdf}
-		Turtlebot Diagramm
-	\end{center}
+\begin{center}
+	%\includegraphics[scale=0.16]{images/ransac00.pdf}
+	Turtlebot Diagramm
+\end{center}
 \end{frame}
 
 
@@ -124,41 +124,41 @@
 
 \subsection{Ansatz 1: Erkennen von Treppen mittels horizontaler Linien }
 \begin{frame}{Ansatz 1: Erkennen von Treppen mittels horizontaler Linien}
-	\begin{itemize}
-		\item Canny-Algorithmus zur Kantenerkennung
-		\item Eingabe: Tiefenbild von Asus Xtion Kamera
-	\end{itemize}
-	\begin{columns}
-		\column{0.25\textwidth}
-		\includegraphics[scale=0.16]{images/canny00.pdf}\newline
-		\includegraphics[scale=0.16]{images/canny02.pdf}
-		\column{0.25\textwidth}
-		\includegraphics[scale=0.16]{images/canny01.pdf}\newline
-		\includegraphics[scale=0.16]{images/canny03.pdf}
-	\end{columns}
+\begin{itemize}
+	\item Canny-Algorithmus zur Kantenerkennung
+	\item Eingabe: Tiefenbild von Asus Xtion Kamera
+\end{itemize}
+\begin{columns}
+	\column{0.25\textwidth}
+	\includegraphics[scale=0.16]{images/canny00.pdf}\newline
+	\includegraphics[scale=0.16]{images/canny02.pdf}
+	\column{0.25\textwidth}
+	\includegraphics[scale=0.16]{images/canny01.pdf}\newline
+	\includegraphics[scale=0.16]{images/canny03.pdf}
+\end{columns}
 \end{frame}
 
 
 \subsection{Ansatz 2: Erkennen von Treppen mittels vertikaler Flächen}
 \begin{frame}{Ansatz 2: Erkennen von Treppen mittels vertikaler Flächen}
-	\begin{itemize}
-		\item Eingabe: zwei-dimensionale Punktwolke
-		\item Verwendung des RANSAC-Algorithmus zur Ermittlung von Flächen (dazu gleich mehr)
-	\end{itemize}
+\begin{itemize}
+	\item Eingabe: zwei-dimensionale Punktwolke
+	\item Verwendung des RANSAC-Algorithmus zur Ermittlung von Flächen (dazu gleich mehr)
+\end{itemize}
 \end{frame}
 
 \begin{frame}{RANSAC-Algorithmus}
-	\begin{columns}
-		\column{0.65\textwidth}
-		\begin{itemize}
-			\item Problem: Automatisch erfasste Messdaten enthalten meist viele Ausreißer
-			\item RANSAC: Algorithmus zum Entfernen von Ausreißern \(\longrightarrow\) Ermittlung von Zwischenwerten
-			\item Zwischenwerte als Eingabe für Zielalgorithmus
-		\end{itemize}
-		\column{0.35\textwidth}
-		\includegraphics[scale=0.28]{images/ausreisser.pdf}
-		(Quelle: Wikipedia)
-	\end{columns}
+\begin{columns}
+	\column{0.65\textwidth}
+	\begin{itemize}
+		\item Problem: Automatisch erfasste Messdaten enthalten meist viele Ausreißer
+		\item RANSAC: Algorithmus zum Entfernen von Ausreißern \(\longrightarrow\) Ermittlung von Zwischenwerten
+		\item Zwischenwerte als Eingabe für Zielalgorithmus
+	\end{itemize}
+	\column{0.35\textwidth}
+	\includegraphics[scale=0.28]{images/ausreisser.pdf}
+	(Quelle: Wikipedia)
+\end{columns}
 \end{frame}
 
 
@@ -166,58 +166,57 @@
 \section{Implementierung}
 
 \begin{frame}{Implementierung}
+\begin{itemize}
+	\item ROS Node zur Treppenerkennung
+	\item C++, PCL
+	\item Einführen Formats zur Speicherung der Treppen
 	\begin{itemize}
-		\item ROS Node zur Treppenerkennung
-		\item C++, PCL
-		\item Einführen Formats zur Speicherung der Treppen
-		\begin{itemize}
-			\item YAML
-		\end{itemize}
-		\item Import-/Export-Funktionen mittels \texttt{rosservice}
+		\item YAML
 	\end{itemize}
+	\item Import-/Export-Funktionen mittels \texttt{rosservice}
+\end{itemize}
 \end{frame}
 
 \begin{frame}{Implementierung im Detail}
-	\begin{itemize}
-		\item Eingabe: Punktwolke, Ausgabe: Treppenliste
-	\end{itemize}
-	\begin{center}
-		\includegraphics[scale=0.42]{activitydiagram.pdf}
-	\end{center}
+\begin{itemize}
+	\item Eingabe: Punktwolke, Ausgabe: Treppenliste
+\end{itemize}
+\begin{center}
+	\includegraphics[scale=0.42]{activitydiagram.pdf}
+\end{center}
 \end{frame}
 
 \begin{frame}{Implementierung im Detail}
-	\begin{itemize}
-		\item Nach Anwendung von \texttt{RANSAC}: Erkennen von senkrechten Flächen
-	\end{itemize}
-	\begin{center}
-		\includegraphics[scale=0.16]{images/ransac01.pdf}
-	\end{center}
+\begin{itemize}
+	\item Nach Anwendung von \texttt{RANSAC}: Erkennen von senkrechten Flächen
+\end{itemize}
+\begin{center}
+	\includegraphics[scale=0.16]{images/ransac01.pdf}
+\end{center}
 \end{frame}
 
 \begin{frame}{Implementierung im Detail}
-	\begin{itemize}
-		\item Höhenfilter
-	\end{itemize}
-	\begin{center}
-		\includegraphics[scale=0.16]{images/ransac02.pdf}
-	\end{center}
+\begin{itemize}
+	\item Höhenfilter
+\end{itemize}
+\begin{center}
+	\includegraphics[scale=0.16]{images/ransac02.pdf}
+\end{center}
 \end{frame}
 
 \begin{frame}{Implementierung im Detail}
-	\begin{itemize}
-		\item Treppenbauen
-	\end{itemize}
-	\begin{center}
-		\includegraphics[scale=0.16]{images/ransac03.pdf}
-	\end{center}
+\begin{itemize}
+	\item Treppenbauen
+\end{itemize}
+\begin{center}
+	\includegraphics[scale=0.16]{images/ransac03.pdf}
+\end{center}
 \end{frame}
 
 \begin{frame}{Speicherformat für Import/Export}
-	\begin{itemize}
-		\item \texttt{rosservice call export\_stairways \~stairs.yaml}
-	\end{itemize}
-
+\begin{itemize}
+	\item \texttt{rosservice call export\_stairways \~stairs.yaml}
+\end{itemize}
 \end{frame}
 
 
