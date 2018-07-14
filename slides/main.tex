@@ -78,53 +78,45 @@
 		\item Hardwareausstattung Basisversion
 		\begin{itemize}
 			\item Sick LMS 100 (LiDAR) zum 2-dimensionalen Mappen und Lokalisieren
-			\item Brix mit Intel Core 2Duo..
+			\item Brix mit Intel Core 2 Duo..
 			\item ATmega-basiertes Steuerinterface (Atmel ATmega 2560)
 			\item WLAN-Router
 		\end{itemize}
 		\item Hardwareerweiterungen für die Treppenerkennung
 		\begin{itemize}
-			\item Schnellerer Brix für 3D-Berechnungen
+			\item Schnellerer Brix mit Intel i5 vierter Generation für 3D-Berechnungen
 			\item Asus Action Camera für 3D-Erfassung der Umgebung
 		\end{itemize}
 	\end{itemize}
 \end{frame}
 
 \begin{frame}{Roboterplattform - HMMWV}
-	\begin{tikzpicture}
-		\node at (0,   3) [rectangle,draw] (engine_drive_left)   {$Engine\_drive_{left}$};
-		\node at (0,   2) [rectangle,draw] (engine_drive_right)  {$Engine\_drive_{right}$};
-		\node at (0,   1) [rectangle,draw] (engine_rotate_left)  {$Engine\_rotate_{left}$};
-		\node at (0,   0) [rectangle,draw] (engine_rotate_right) {$Engine\_rotate_{right}$};
-		\node at (4, 1.5) [rectangle,draw] (engine_controller)   {$Engine\_Controller$};
-		\node at (4,   4) [rectangle,draw] (main_processor)      {$Main\_Processor$};
-		\node at (8,   3) [rectangle,draw] (lidar)               {$LiDAR$};
-		\node at (8,   4) [rectangle,draw] (3d_camera)           {$3D\_Camera$};
-		\node at (4,   6) [rectangle,draw] (ap)                  {$Access~Point$};
-
-		\draw[->] (engine_controller) edge node {} (engine_drive_left);
-		\draw[->] (engine_controller) edge node {} (engine_drive_right);
-		\draw[->] (engine_controller) edge node {} (engine_rotate_left);
-		\draw[->] (engine_controller) edge node {} (engine_rotate_right);
-		\draw[->] (main_processor)    edge node {} (engine_controller);
-		\draw[->] (main_processor)    edge node {} (lidar);
-		\draw[->] (main_processor)    edge node {} (3d_camera);
-		\draw[->] (main_processor)    edge node {} (ap);
-	\end{tikzpicture}
+	\begin{center}
+		%\includegraphics[scale=0.16]{images/ransac01.pdf}
+		Foto von HMMWV
+	\end{center}
 \end{frame}
 
 
 \subsection{Robot Operating System (ROS)}
 \begin{frame}{Robot Operating System (ROS)}
 	\begin{itemize}
-		\item Verteilte Middleware zum Automatisieren der Kommunikation der Komponenten von Robotern
+		\item Verteilte Middleware zum Automatisieren von Kommunikation der Komponenten von Robotern
 		\item Zentrale Aufgaben
 		\begin{itemize}
 			\item Nachrichtenaustausch zwischen Programmteilen
 			\item Hardwareabstraktion
 		\end{itemize}
+		\item Viele Komponenten für Standardaufgaben (z.B. SLAM)
 	\end{itemize}
 	TODO: Node-Diagramm Turtlebot
+\end{frame}
+
+\begin{frame}{Node-Diagramm}
+	\begin{center}
+		%\includegraphics[scale=0.16]{images/ransac00.pdf}
+		Turtlebot Diagramm
+	\end{center}
 \end{frame}
 
 
@@ -176,28 +168,22 @@
 
 \begin{frame}{Implementierung}
 	\begin{itemize}
-		\item ROS Node
+		\item ROS Node zur Treppenerkennung
 		\item C++, PCL
-		\item Einführen eines Ebenen-Formats
-		\item Import-/Export-Funktion
-		\item \dots
+		\item Einführen Formats zur Speicherung der Treppen
+		\begin{itemize}
+			\item YAML
+		\end{itemize}
+		\item Import-/Export-Funktionen mittels \texttt{rosservice}
 	\end{itemize}
-\end{frame}
-
-\begin{frame}{Implementierung im Detail}
-	\begin{enumerate}
-		\item Empfangen und Downsamplen der Punktwolke
-		\item Aktivitätsdiagramm
-		\item \dots
-	\end{enumerate}
 \end{frame}
 
 \begin{frame}{Implementierung im Detail}
 	\begin{itemize}
-		\item Eingabe: Punktwolke
+		\item Eingabe: Punktwolke, Ausgabe: Treppenliste
 	\end{itemize}
 	\begin{center}
-		\includegraphics[scale=0.16]{images/ransac00.pdf}
+		\includegraphics[scale=0.42]{activitydiagram.pdf}
 	\end{center}
 \end{frame}
 

@@ -1,0 +1,15 @@
+@startuml
+
+start
+while (running)
+:Empfangen und Downsamplen der Punktwolke;
+:Segmentieren;
+:Transformieren (Kamerakoordindaten);
+	while (Stufen vorhanden)
+		:Nehme vorderste Stufe;
+		:Suche passende Treppe;
+	endwhile
+endwhile
+stop
+
+@enduml
