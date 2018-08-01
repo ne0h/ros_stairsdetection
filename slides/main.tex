@@ -75,10 +75,10 @@
 \subsection{Roboterplattform - HMMWV}
 \begin{frame}{Roboterplattform - HMMWV}
 \begin{itemize}
-	\item Hardwareausstattung Basisversion
+	\item Ursprüngliche Hardwareausstattung
 	\begin{itemize}
 		\item Sick LMS 100 (LiDAR) zum 2-dimensionalen Mappen und Lokalisieren
-		\item Brix mit Intel Core 2 Duo..
+		\item Brix mit Intel Core 2 Duo
 		\item ATmega-basiertes Steuerinterface (Atmel ATmega 2560)
 		\item WLAN-Router
 	\end{itemize}
@@ -92,8 +92,7 @@
 
 \begin{frame}{Roboterplattform - HMMWV}
 \begin{center}
-	%\includegraphics[scale=0.16]{images/ransac01.pdf}
-	Foto von HMMWV
+	\includegraphics[scale=0.4]{images/hmmwv.jpg}
 \end{center}
 \end{frame}
 
@@ -101,13 +100,13 @@
 \subsection{Robot Operating System (ROS)}
 \begin{frame}{Robot Operating System (ROS)}
 \begin{itemize}
-	\item Verteilte Middleware zum Automatisieren von Kommunikation der Komponenten von Robotern
+	\item Verteilte Middleware zur Automatisierung der Kommunikation der Robotern-Komponenten
 	\item Zentrale Aufgaben
 	\begin{itemize}
-		\item Nachrichtenaustausch zwischen Programmteilen
+		\item Nachrichtenaustausch (zentraler Broker, Publisher-Subscriber-Prinzip)
 		\item Hardwareabstraktion
 	\end{itemize}
-	\item Viele Komponenten für Standardaufgaben (z.B. SLAM)
+	\item Viele Komponenten für Standardaufgaben (z.B. für SLAM, Sensoren, etc.)
 \end{itemize}
 \begin{center}
 	\includegraphics[scale=0.35]{images/rosgraph_turtlesim.pdf}
@@ -116,8 +115,7 @@
 
 \begin{frame}{Node-Diagramm}
 \begin{center}
-	%\includegraphics[scale=0.16]{images/ransac00.pdf}
-	HMMWV Diagramm
+	\includegraphics[scale=0.05]{images/rosgraph_hmmwv.pdf}
 \end{center}
 \end{frame}
 
@@ -177,6 +175,7 @@
 		\item YAML
 	\end{itemize}
 	\item Import-/Export-Funktionen mittels \texttt{rosservice}
+	\item Nachrichten-basierte Kommunikation mit Publisher/Subscriber
 \end{itemize}
 \end{frame}
 
@@ -216,10 +215,27 @@
 \end{center}
 \end{frame}
 
-\begin{frame}{Speicherformat für Import/Export}
+\begin{frame}[fragile]
+\frametitle{Speicherformat für Import/Export}
 \begin{itemize}
-	\item \texttt{rosservice call export\_stairways \~stairs.yaml}
+	\item \texttt{rosservice call export\_stairways stairs.yaml}
+	\item Beipiel
 \end{itemize}
+\begin{center}
+	\begin{lstlisting}
+	stairways:
+	  - step_height: 0.1944063454866409
+	    step_depth: 0.2506448223569446
+	    step_width: 0.8087717592716217
+	    stairway_height: 0.5734314657747746
+	    step_count: 3
+	    first_step:
+	      y: 0.04630382890261724
+	      z: 0.200202414393425
+	      x: 1.063629030461962
+
+	\end{lstlisting}
+\end{center}
 \end{frame}
 
 
