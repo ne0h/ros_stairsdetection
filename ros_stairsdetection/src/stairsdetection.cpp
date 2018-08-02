@@ -56,7 +56,7 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &input) {
 
 	pcl::VoxelGrid<pcl::PCLPointCloud2> sor;
 	sor.setInputCloud(unfilteredCloudPtr);
-	sor.setLeafSize(0.02f, 0.02f, 0.02f);								// default: sor.setLeafSize(0.01f, 0.01f, 0.01f);
+	sor.setLeafSize(0.06f, 0.06f, 0.06f);								// default: sor.setLeafSize(0.01f, 0.01f, 0.01f);
 	sor.filter(*filteredCloud);
 
 	// convert to pointcloud
