@@ -7,6 +7,8 @@
 #include <cmath>
 #include <pthread.h>
 
+#include <sys/time.h>
+
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <pcl_conversions/pcl_conversions.h>
@@ -41,10 +43,18 @@ bool sortSteps(Step a, Step b) {
 	return (a.getMin().x < b.getMin().x);
 }
 
+long get_timestamp() {
+	struct timeval tp;
+	gettimeofday(&tp, NULL);
+	return tp.tv_sec * 1000 + tp.tv_usec / 1000;
+}
+
 void callback(const sensor_msgs::PointCloud2ConstPtr &input) {
-	ROS_INFO("========================================================================");
-	ROS_INFO("========================================================================");
-	ROS_INFO("New input data received.");
+	const long start_time = get_timestamp();
+
+	//ROS_INFO("========================================================================");
+	//ROS_INFO("========================================================================");
+	//ROS_INFO("New input data received.");
 
 	// convert from ros::pointcloud2 to pcl::pointcloud2
 	pcl::PCLPointCloud2* unfilteredCloud = new pcl::PCLPointCloud2;
@@ -121,6 +131,10 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &input) {
 			continue;
 		}
 
+		if (step.getHeight() > 1.5) {
+			continue;
+		}
+
 		steps.push_back(step);
 	}
 
@@ -128,14 +142,14 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &input) {
 	 * Order Steps by distance and print
 	 */
 	std::sort(steps.begin(), steps.end(), sortSteps);
-	print(steps);
+	//print(steps);
 
 	/**
 	 * Publish steps?
 	 */
 	if (rc.getPublishStepsSetting()) {
-		ROS_INFO("-----------------------------------------------------------------");
-		ROS_INFO("Publishing %d step(s)", (int) steps.size());
+		//ROS_INFO("-----------------------------------------------------------------");
+		//ROS_INFO("Publishing %d step(s)", (int) steps.size());
 
 		std::vector<Step> out = steps;
 		rc.getTransformHelper().transformToCameraCoordinates(out);
@@ -152,7 +166,7 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &input) {
 	pthread_mutex_lock(&stairwaysMutex);
 	
 
-	ROS_INFO("-----------------------------------------------------------------");
+	//ROS_INFO("-----------------------------------------------------------------");
 	/*
 	 * Try to build (multiple) stairways out of the steps
 	 */
@@ -226,10 +240,13 @@ void callback(const sensor_msgs::PointCloud2ConstPtr &input) {
 		std::vector<Stairway> out = stairways;
 		rc.getTransformHelper().transformToCameraCoordinates(out);
 		rc.publishStairways(out);
-		ROS_INFO("Published %d stairways", (int) stairways.size());
+		//ROS_INFO("Published %d stairways", (int) stairways.size());
 	}
 
 	pthread_mutex_unlock(&stairwaysMutex);
+
+	const long end_time = get_timestamp();
+	std::cout << end_time - start_time << std::endl;
 }
 
 bool alreadyKnown(Stairway &stairway) {
