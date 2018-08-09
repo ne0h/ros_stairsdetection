@@ -1,15 +1,13 @@
 @startuml
 
 start
-while (running)
-:Empfangen und Downsamplen der Punktwolke;
+:Empfangen und adaptives Downsamplen der Punktwolke (Voxelgrid);
 :Segmentieren;
-:Transformieren (Kamerakoordindaten);
-	while (Stufen vorhanden)
-		:Nehme vorderste Stufe;
-		:Suche passende Treppe;
-	endwhile
-endwhile
+while (Stufen vorhanden) is (ja)
+	:Nehme vorderste Stufe;
+	:Suche passende Treppe;
+endwhile (nein)
+:Transformieren in Weltkoordinaten;
 stop
 
 @enduml
